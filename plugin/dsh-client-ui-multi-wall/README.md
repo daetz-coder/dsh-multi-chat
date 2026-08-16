@@ -1,45 +1,26 @@
 # @deepseek-ai/dsh-client-ui-multi-wall
 
-多窗口墙（Multi-Window Wall）：在官方 DSH Web 界面内显示所有正在运行的 DSH 实例。
+English | [中文](README.zh.md)
 
-- **作为官方「视图环」的一个视图**（`conversation.view` 列表槽位，纯增量）：点击入口后，右侧对话区**原位替换**为多窗口墙——一个窗口对应一个端口（`127.0.0.1:<port>`），每个窗口就是原版 DSH Web UI（iframe 嵌入），所有任务的进度同时可见，无需切换任务栏标签。
-- **侧边栏底部**新增「多窗口墙」快捷入口（`sidebar.footer.action` 列表槽位，纯增量），点击后跳到墙视图；对话区头部也会出现「多窗口墙」标签页，可直接点击切换。
-- 支持自动发现（扫描端口区间）、**新建窗口（启动全新 DSH 实例）**、列数切换（自动/1/2/3/4/6，默认横向铺满）、单窗口放大、单独/全部刷新、新标签页打开、实时在线状态点。
-- **退出**：工具栏右上角的 **✕ 退出**按钮，一键切回对话视图（等价于点击头部的「对话」标签页）。
-- **手机/远程访问**：工具栏「手机访问」按钮会自动为本实例启动一个**带令牌认证的内联网关**（无需外部命令），返回局域网 URL + 登录口令；手机打开 URL、输入口令即可进入。
-- **递归防护**：墙永远不会嵌入自身端口；被嵌入的页面携带 `?multi-wall=embed` 标记，不注册任何墙界面，从根上杜绝「墙中墙」。
-- **可关闭自身实例**：当前实例也显示在墙上（便于监控），其「关闭实例」按钮同样可用——两次确认后终止本端口服务（页面会断开）。
+Multi-window wall plugin, browser half + node half: a grid of every running DSH instance, one pane per `127.0.0.1:<port>`, rendered inside the official web GUI as an additive `conversation.view` ring entry (order 20). The view swaps the chat panel in place for a wall of iframes, each loading the original DSH Web UI with a `?multi-wall=embed` flag that suppresses the wall UI inside the pane — recursion is stopped at the source. The sidebar foot gains a `sidebar.footer.action` shortcut (order 10) that clicks the header's view-ring tab for this plugin, so the switch goes through the official view-ring state machine rather than reaching into the chat store.
 
-## 不改动任何官方逻辑
+The wall's business state is a single store (`dsh.multi-wall`): the discovered port list and the grid column count, persisted across view switches and reloads. Discovery, liveness, create, and stop all flow through the node half's read-only JSON routes — `/multi/api/ports` (auto-discovery, excluding nothing so the serving instance is also watchable), `/multi/api/status` (liveness of a specific port list), `/multi/api/stop` (terminate a chosen instance), `/multi/api/create` (start a fresh instance, surfacing the child's stderr on failure), and `/multi/api/link` (phone access).
 
-本插件只做两件事：
+Phone/remote access: the official CLI forbids `--host 0.0.0.0` (it would expose remote code execution), so `/multi/api/link` lazily starts an **inline authenticated gateway** (raw `node:net` reverse proxy with an HMAC-signed session-cookie login, targets `127.0.0.1:<self-port>`, rewrites Host/Origin so the official `/api` browser-trust fence sees a local request, and passes WebSocket upgrades through). The route returns the LAN URLs plus the login token; the gateway falls back to an OS-assigned port when its intended port hits a Windows excluded range or is already bound.
 
-1. **node half**：在 `webServer` 上注册五个只读 JSON 路由 `/multi/api/ports`（自动发现存活 DSH 实例，自动排除自身端口）、`/multi/api/status`（指定端口探活）、`/multi/api/stop`（关闭指定实例）、`/multi/api/create`（启动全新 DSH 实例，失败时回传子进程 stderr 等真实原因）、`/multi/api/link`（手机/远程访问链接）。
-2. **browser half**：注册两个**增量列表槽位**（`conversation.view`、`sidebar.footer.action`），把墙作为官方视图环的一个视图渲染。
-
-不替换任何既有槽位、不改写任何行（row）、不触碰会话/代理/工具等核心逻辑。墙视图激活时，通过一条纯 CSS `:has()` 规则隐藏对话区底部的输入框与统计条（`[data-composer-seat]`），把整列高度让给墙；切回对话视图后输入框自动恢复。退出按钮通过点击官方视图环的第一个标签页（对话，order 0）来切换，复用官方 `actions.setView` 通道，不直接读取对话 store。
-
-## 配置（可选）
-
-```yaml
-# 覆盖自动发现区间或固定端口列表（默认扫描 3070–3110）
-- id: ui-multi-wall
-  name: '@deepseek-ai/dsh-client-ui-multi-wall'
-  config:
-    scanFrom: 3070
-    scanTo: 3110
-    ports: []        # 设置后不再自动扫描
-    publicUrl: ''    # 可选：固定对外网关地址（设置则 /multi/api/link 直接返回它）
-    gatewayPort: 0   # 内联网关端口；0（默认）= 实例端口 + 5000，撞段时自动回退 OS 分配
-    gatewayToken: '' # 内联网关登录口令；空（默认）= 每次随机生成
-```
+The `/client` exports the plugin body (`apply`/`inject`), the `WallView`/`WallToggle` components, the wall store factory, and the injected probe-face types.
 
 ## Model Experience
 
-本插件不向模型请求注入任何内容，不改变模型可见输入，无 token/KV-cache 影响。
+None. The plugin adds no prompt content, no session event, and no model-visible input; the wall, its store, and every `/multi/api/*` route are UI/discovery surfaces only. No token or KV-cache effect.
+
+#### KV Cache effect
+
+None. Nothing the plugin owns reaches the history tail or the model context.
 
 ## Known Limitations and Deferred Work
 
-- 墙视图依赖各实例 `127.0.0.1:<port>` 可直接访问；若某实例绑定到其它 host，请在外部自行配置。
-- 探活只检查 index 是否含 `__DSH_BOOT__` 标记；非 DSH 服务同端口会误报为「未发现」。
-- 墙视图是会话作用域的视图环条目：需要至少一个活跃会话，视图区才会渲染墙。
+- **Loopback-only panes** — the wall embeds `127.0.0.1:<port>` and probes the loopback; an instance bound to a non-loopback host needs external configuration.
+- **Probe is a marker check** — liveness only checks that the served index carries `__DSH_BOOT__`; a non-DSH service squatting the same port reads as "not found".
+- **Session-scoped view** — the wall is a `conversation.view` ring entry, so it renders only with an active session.
+- **Inline gateway is plain HTTP** — on a trusted LAN the token over plain HTTP is acceptable; across the internet prefer `publicUrl` (an external TLS gateway) or a VPN.

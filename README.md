@@ -147,6 +147,14 @@ node bin/dsh-multi-chat.mjs stop
 node bin/dsh-multi-chat.mjs gateway --target 127.0.0.1:3080 --token <口令>
 ```
 
+## 🔍 发现与生态
+
+本插件遵循 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 官方 client 插件规范：
+
+- **在 GitHub 插件生态中被发现**：给本仓库添加 [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic，即可在官方 [`dsh-plugin` topic 页](https://github.com/topics/dsh-plugin) 被搜索到（官方推荐的第三方插件发现方式）。
+- **三语技术文档**：插件包 `plugin/dsh-client-ui-multi-wall/` 下提供 `README.md`（英文）、`README.zh.md`（中文）与 `README.i18n.yaml`（双语一致性记录），结构与官方 `packages/client/*` 插件一致。
+- **纯增量、不碰核心**：只注册 `conversation.view` / `sidebar.footer.action` 两个列表槽位 + `/multi/api/*` 只读路由，不改动任何官方核心逻辑。
+
 ## 在官方 monorepo 中的位置
 
 `packages/client/ui-multi-wall` 是遵循官方 client 插件规范的包（tsconfig host/client 分离、tsdown clientBundle、locales zh/en、invariant 伴随、HMR 安全测试），并已接入 `packages/bundle/web-app` 的 dsh.client roster 与 `tsconfig.client.json` 聚合。构建：
