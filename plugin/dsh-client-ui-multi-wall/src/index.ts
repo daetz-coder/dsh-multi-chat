@@ -8,11 +8,13 @@
  */
 
 import { execFile, spawn } from 'node:child_process'
+import { randomBytes } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { networkInterfaces } from 'node:os'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-host-webserver'
+import { startGateway, type GatewayHandle } from './gateway'
 
 /** Stable Cordis plugin name. */
 export const name = 'client-ui-multi-wall'
@@ -34,6 +36,16 @@ export interface MultiWallConfig {
    * answers `{ lan: [publicUrl + '/'], reachable: true }`.
    */
   publicUrl?: string
+  /**
+   * Gateway listen port for the inline phone-access gateway. `0` (default)
+   * means `targetPort + 5000`.
+   */
+  gatewayPort?: number
+  /**
+   * Optional fixed login token for the inline gateway. Empty (default) means
+   * a random token is generated per gateway start (returned by /multi/api/link).
+   */
+  gatewayToken?: string
 }
 
 /** Schema-validated config (the Loader resolves defaults for absent keys). */
@@ -42,6 +54,8 @@ export const Config = z.object({
   scanTo: z.natural().default(3110),
   ports: z.array(z.natural()).default([]),
   publicUrl: z.string().default(''),
+  gatewayPort: z.number().default(0),
+  gatewayToken: z.string().default(''),
 })
 
 /** MIME for JSON probe answers. */
@@ -320,6 +334,11 @@ export function apply(ctx: Context, config: MultiWallConfig = {}): void {
   const scanTo = config.scanTo ?? 3110
   const fixedPorts = config.ports ?? []
 
+  // Inline gateway state: lazily started on first `/multi/api/link` call and
+  // reused until the target port changes (or the instance restarts).
+  let gateway: GatewayHandle | null = null
+  let gatewayTargetPort = -1
+
   ctx.effect(() => ctx.webServer.register({
     kind: 'exact',
     path: '/multi/api/ports',
@@ -426,10 +445,10 @@ export function apply(ctx: Context, config: MultiWallConfig = {}): void {
 
   // The phone-reachable URL for this instance. The official CLI forbids
   // `--host 0.0.0.0` (it would expose remote code execution), so a loopback
-  // instance answers with the machine's LAN addresses plus guidance to run
-  // the authenticated gateway (`dsh-multi-wall gateway`) in front. When the
-  // deployment configures `publicUrl` (a gateway URL), that URL is reported
-  // instead and treated as reachable.
+  // instance is reached from a phone through an auth-gated gateway. When
+  // `publicUrl` is configured, that URL is reported verbatim. Otherwise this
+  // route lazily starts the inline gateway (target 127.0.0.1:<selfPort>) and
+  // answers with the LAN URLs plus the generated/fixed login token.
   // GET /multi/api/link
   ctx.effect(() => ctx.webServer.register({
     kind: 'exact',
@@ -447,16 +466,54 @@ export function apply(ctx: Context, config: MultiWallConfig = {}): void {
         json(res, { port, host, lan: [`${publicUrl}/`], reachable: true })
         return
       }
-      const lan = lanAddresses()
-      const urls = lan.map(ip => `http://${ip}:${port}/`)
-      json(res, {
-        port,
-        host,
-        lan: urls,
-        reachable: host !== '127.0.0.1',
-        hint: host === '127.0.0.1'
-          ? `the official CLI blocks --host 0.0.0.0 for safety (it would expose remote code execution). For phone/remote access run the authenticated gateway in front of this instance: npx dsh-multi-wall gateway --target 127.0.0.1:${port} --listen 0.0.0.0:<gw-port> --token <secret>`
-          : undefined,
+
+      // Ensure the inline gateway targets THIS instance's port.
+      const ensureGateway = (): Promise<GatewayHandle> => {
+        if (gateway !== null && gatewayTargetPort === port) {
+          return Promise.resolve(gateway)
+        }
+        // Target changed (or first start): close the stale gateway first.
+        if (gateway !== null) {
+          gateway.close()
+          gateway = null
+        }
+        const token = config.gatewayToken && config.gatewayToken !== '' ? config.gatewayToken : randomBytes(6).toString('hex')
+        const gatewayPort = config.gatewayPort && config.gatewayPort !== 0 ? config.gatewayPort : port + 5000
+        gatewayTargetPort = port
+        return startGateway({
+          targetPort: port,
+          port: gatewayPort,
+          token,
+          name: 'DSH',
+          log: (msg) => ctx.logger.info(`multi-wall gateway: ${msg}`),
+        }).then(handle => {
+          gateway = handle
+          return handle
+        })
+      }
+
+      ensureGateway().then(handle => {
+        const urls = lanAddresses().map(ip => `http://${ip}:${handle.port}/`)
+        json(res, {
+          port,
+          host,
+          lan: urls,
+          gatewayPort: handle.port,
+          token: handle.token,
+          reachable: urls.length > 0,
+          hint: urls.length === 0
+            ? 'no LAN address detected; connect this machine to a network first'
+            : undefined,
+        })
+      }).catch((error: unknown) => {
+        ctx.logger.warn(`multi-wall gateway start failed: ${error instanceof Error ? error.message : String(error)}`)
+        json(res, {
+          port,
+          host,
+          lan: [],
+          reachable: false,
+          hint: error instanceof Error ? error.message : String(error),
+        }, 500)
       })
     },
   }), 'multi-wall: /multi/api/link')

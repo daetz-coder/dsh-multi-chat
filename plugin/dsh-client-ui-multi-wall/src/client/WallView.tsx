@@ -326,6 +326,9 @@ export function WallView({ useStore, actions, discover, probe, stop, create, lin
               <>
                 <span className={css.linkText}>
                   {t('link.reachable').replace('{urls}', linkInfo.lan.join('  '))}
+                  {linkInfo.token !== undefined && linkInfo.token !== ''
+                    ? `  ${t('link.token').replace('{token}', linkInfo.token)}`
+                    : ''}
                 </span>
                 {linkInfo.lan.length > 0 && (
                   <Button variant="outline" size="sm" onClick={() => { void copyFirstLink() }}>

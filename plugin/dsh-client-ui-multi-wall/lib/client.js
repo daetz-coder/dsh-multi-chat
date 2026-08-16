@@ -35,6 +35,7 @@ window.__ModuleLoader__.load({
 			"link.hint": "提示：{hint}",
 			"link.reachable": "手机在同一网络时可用：{urls}",
 			"link.unreachable": "当前实例仅绑定本机，手机无法访问。{hint}",
+			"link.token": "口令：{token}",
 			"columns": "列数",
 			"columns.auto": "自动",
 			"refresh": "全部刷新",
@@ -80,6 +81,7 @@ window.__ModuleLoader__.load({
 			"link.hint": "Hint: {hint}",
 			"link.reachable": "Reachable on the same network: {urls}",
 			"link.unreachable": "This instance binds loopback only; phones cannot reach it. {hint}",
+			"link.token": "Token: {token}",
 			"columns": "Columns",
 			"columns.auto": "Auto",
 			"refresh": "Refresh all",
@@ -206,6 +208,8 @@ window.__ModuleLoader__.load({
 						host: data.host ?? "unknown",
 						lan: data.lan ?? [],
 						reachable: data.reachable === true,
+						...typeof data.gatewayPort === "number" ? { gatewayPort: data.gatewayPort } : {},
+						...typeof data.token === "string" ? { token: data.token } : {},
 						...typeof data.hint === "string" ? { hint: data.hint } : {}
 					};
 				}
@@ -238,27 +242,27 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WallView_module_css_default = {
+			"toolbar": "ouhzTG_toolbar",
+			"paneBody": "ouhzTG_paneBody",
 			"wall": "ouhzTG_wall",
-			"title": "ouhzTG_title",
-			"zoomed": "ouhzTG_zoomed",
-			"pane": "ouhzTG_pane",
+			"linkText": "ouhzTG_linkText",
 			"controls": "ouhzTG_controls",
 			"paneActions": "ouhzTG_paneActions",
 			"action": "ouhzTG_action",
-			"danger": "ouhzTG_danger",
-			"confirm": "ouhzTG_confirm",
-			"hint": "ouhzTG_hint",
-			"paneHead": "ouhzTG_paneHead",
-			"grid": "ouhzTG_grid",
-			"dot": "ouhzTG_dot",
-			"linkText": "ouhzTG_linkText",
-			"status": "ouhzTG_status",
-			"toolbar": "ouhzTG_toolbar",
 			"paneTitle": "ouhzTG_paneTitle",
-			"paneBody": "ouhzTG_paneBody",
-			"empty": "ouhzTG_empty",
+			"zoomed": "ouhzTG_zoomed",
+			"pane": "ouhzTG_pane",
 			"field": "ouhzTG_field",
-			"linkBar": "ouhzTG_linkBar"
+			"paneHead": "ouhzTG_paneHead",
+			"danger": "ouhzTG_danger",
+			"hint": "ouhzTG_hint",
+			"empty": "ouhzTG_empty",
+			"dot": "ouhzTG_dot",
+			"confirm": "ouhzTG_confirm",
+			"status": "ouhzTG_status",
+			"linkBar": "ouhzTG_linkBar",
+			"grid": "ouhzTG_grid",
+			"title": "ouhzTG_title"
 		};
 		//#endregion
 		//#region src/client/WallView.tsx
@@ -590,9 +594,9 @@ window.__ModuleLoader__.load({
 					}),
 					linkOpen && linkInfo !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: WallView_module_css_default.linkBar,
-						children: [linkInfo.reachable ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						children: [linkInfo.reachable ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 							className: WallView_module_css_default.linkText,
-							children: t("link.reachable").replace("{urls}", linkInfo.lan.join("  "))
+							children: [t("link.reachable").replace("{urls}", linkInfo.lan.join("  ")), linkInfo.token !== void 0 && linkInfo.token !== "" ? `  ${t("link.token").replace("{token}", linkInfo.token)}` : ""]
 						}), linkInfo.lan.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 							variant: "outline",
 							size: "sm",

@@ -28,11 +28,15 @@ export interface CreateRow {
 export interface LinkRow {
   port: number
   host: string
-  /** LAN URLs (`http://<lan-ip>:<port>/`), possibly empty. */
+  /** LAN URLs (`http://<lan-ip>:<gateway-port>/`), possibly empty. */
   lan: string[]
-  /** Whether the instance is reachable off-loopback (binds 0.0.0.0). */
+  /** Whether the instance is reachable off-loopback (gateway running). */
   reachable: boolean
-  /** Human hint when not reachable (restart / tunnel guidance). */
+  /** The inline gateway's listen port (when started). */
+  gatewayPort?: number
+  /** The login token (generated or configured). */
+  token?: string
+  /** Human hint when not reachable. */
   hint?: string
 }
 
@@ -110,6 +114,8 @@ export function createWallInjected(mount = ''): WallInjected {
         host: data.host ?? 'unknown',
         lan: data.lan ?? [],
         reachable: data.reachable === true,
+        ...(typeof data.gatewayPort === 'number' ? { gatewayPort: data.gatewayPort } : {}),
+        ...(typeof data.token === 'string' ? { token: data.token } : {}),
         ...(typeof data.hint === 'string' ? { hint: data.hint } : {}),
       }
     },
