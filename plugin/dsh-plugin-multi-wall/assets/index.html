@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DSH Multi-Window Wall</title>
+    <link rel="stylesheet" href="wall.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <div class="brand">
+        <span class="logo">▦</span>
+        <h1>DSH 多窗口墙</h1>
+        <span class="sub">Multi-Window Wall</span>
+      </div>
+
+      <div class="controls">
+        <div class="group">
+          <label for="scan-from">扫描端口</label>
+          <input id="scan-from" type="number" min="1" max="65535" value="3070" />
+          <span class="sep">–</span>
+          <input id="scan-to" type="number" min="1" max="65535" value="3110" />
+          <button id="btn-scan" class="btn primary" title="扫描区间内的 DSH 实例">发现实例</button>
+        </div>
+
+        <div class="group">
+          <label for="add-port">添加端口</label>
+          <input id="add-port" type="number" min="1" max="65535" placeholder="如 3084" />
+          <button id="btn-add" class="btn" title="手动加入一个窗口">+ 窗口</button>
+        </div>
+
+        <div class="group">
+          <label for="columns">列数</label>
+          <select id="columns">
+            <option value="auto">自动</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="6">6</option>
+          </select>
+          <button id="btn-refresh-all" class="btn" title="刷新全部窗口">⟳ 全部刷新</button>
+        </div>
+      </div>
+    </header>
+
+    <main id="grid" class="grid" aria-live="polite"></main>
+
+    <div id="empty" class="empty hidden">
+      <p>没有检测到 DSH 实例。</p>
+      <p class="hint">先启动若干 <code>dsh web --port &lt;n&gt;</code> 实例，再回来点「发现实例」，或手动「添加端口」。</p>
+    </div>
+
+    <footer class="statusbar">
+      <span id="status-text">就绪</span>
+      <span class="spacer"></span>
+      <span class="hint">点击窗口标题放大 / Esc 退出 · 拖动可调列宽</span>
+    </footer>
+
+    <script src="wall.js"></script>
+  </body>
+</html>
