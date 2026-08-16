@@ -1,7 +1,7 @@
 {
   "name": "dsh-multi-chat",
   "version": "0.6.0",
-  "description": "DSH 多对话：在官方 DeepSeek Harness Web 界面里并排运行和监控多个对话实例（多窗口墙），并内置带口令认证的手机访问网关。npx dsh-multi-chat install|start|stop",
+  "description": "DSH 多对话：在官方 DeepSeek Harness Web 界面里以多窗口网格并排运行、监控多个对话实例，一屏盯住所有 Agent 的实时进度；内置带口令认证的局域网网关，手机/平板也能看。npx dsh-multi-chat install|start|stop|gateway",
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -21,6 +21,8 @@
     "deepseek",
     "multi-chat",
     "multi-conversation",
+    "multi-window",
+    "multi-agent",
     "client-plugin",
     "gateway",
     "phone-access"
@@ -29,6 +31,7 @@
     "bin/",
     "scripts/",
     "patches/",
+    "assets/",
     "plugin/dsh-client-ui-multi-wall/package.json",
     "plugin/dsh-client-ui-multi-wall/README.md",
     "plugin/dsh-client-ui-multi-wall/lib/index.js",

@@ -1,6 +1,13 @@
 # 💬 dsh-multi-chat —— 多对话，一屏驾驭
 
-> **在 DeepSeek Harness 里同时开 N 个对话，并排盯住每一个 Agent 的实时进度，还能用手机躺着看。** 一个浏览器，从「一次一个对话」升级成「全景多对话驾驶舱」。
+<p align="center">
+  <a href="https://www.npmjs.com/package/dsh-multi-chat"><img src="https://img.shields.io/npm/v/dsh-multi-chat" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/dsh-multi-chat"><img src="https://img.shields.io/npm/dm/dsh-multi-chat" alt="npm downloads"></a>
+  <a href="https://github.com/daetz-coder/dsh-multi-chat/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license"></a>
+  <a href="https://github.com/topics/dsh-plugin"><img src="https://img.shields.io/badge/dsh-plugin-✓-brightgreen" alt="dsh-plugin"></a>
+</p>
+
+> **在 DeepSeek Harness 里同时开 N 个对话，并排盯住每一个 Agent 的实时进度，还能用手机/平板躺着看。** 一个浏览器，从「一次一个对话」升级成「全景多对话驾驶舱」。
 
 给 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) 官方 Web 界面装上一面**多窗口墙**：在一张网格里同时显示 N 个正在运行的 DSH 对话实例（每个实例独立跑一个任务），所有 Agent 的实时进度、对话、输出**一眼尽收**，不用在无数标签页/窗口之间切来切去。
 
@@ -8,13 +15,27 @@
 
 | 能力 | 说明 |
 |------|------|
-| 📺 **多窗口墙** | 侧边栏一键进入，右侧对话区原位变成窗口网格，一个端口一格，并排看全部任务 |
+| 📺 **多窗口** | 侧边栏一键进入，右侧对话区原位变成窗口网格，一个端口一格，并排看全部任务 |
 | 🔍 **自动发现** | 扫描端口区间自动发现正在运行的 DSH 实例，也可手动管理 |
 | ➕ **一键新建窗口** | 墙内直接启动全新 DSH 实例，凑成你的多对话矩阵 |
 | 📱 **手机访问** | 点「手机访问」自动起一个**内置带口令认证的局域网网关**，手机打开 URL、输入口令即可看进度 |
 | 🛑 **窗口控制** | 单窗口放大、刷新、新标签页打开、关闭实例、列数切换（自动/1/2/3/4/6）|
 
 > **多对话 = 多端口。** 启动 N 个 `dsh web --port <n>`，每个实例独立跑一个对话/任务；在任意一个实例里打开多窗口墙，即可并排看到全部。
+
+## 📸 运行效果
+
+**🖥️ Windows · 双对话并排** —— 两个正在运行的 DSH 实例并排列出，每格都是完整的官方对话界面，带实时在线状态点与单窗控制（放大 / 刷新 / 新标签页 / 移除）：
+
+![Windows 双对话：两个 DSH 实例并排显示](assets/01-windows-dual-chat.png)
+
+**📱 iPad · 双对话移动端** —— 同一局域网内，iPad 打开带口令认证的网关地址，即可在平板上一屏并排盯住两个 Agent 的实时进度：
+
+![iPad 双对话：平板端并排显示两个 DSH 实例](assets/02-ipad-dual-chat.png)
+
+**🖥️ Windows · 三对话全景** —— 3 列网格并排显示 3 个正在运行的实例，一屏尽收全部 Agent，把「一次一个对话」升级成「全景多对话驾驶舱」：
+
+![Windows 三对话：3 列网格并排显示 3 个 DSH 实例](assets/03-windows-triple-chat.png)
 
 ## 🚀 30 秒上手
 
@@ -25,7 +46,7 @@ npx dsh-multi-chat install
 # 2. 启动几个实例
 npx dsh-multi-chat start --ports 3080,3081,3082
 
-# 3. 打开任意实例，点侧边栏底部「多窗口墙」→ 完成 🎉
+# 3. 打开任意实例，点侧边栏底部「多窗口」→ 完成 🎉
 ```
 
 ## 为什么这样做
@@ -60,7 +81,7 @@ harness-src/                       # 官方 deepseek-harness 源码（开发/构
 
 # 2) 重启 dsh web，打开任意实例
 dsh web --port 3084
-# 浏览器打开 http://127.0.0.1:3084 ，侧边栏底部出现「多窗口墙」按钮
+# 浏览器打开 http://127.0.0.1:3084 ，侧边栏底部出现「多窗口」按钮
 ```
 
 或手动：
@@ -74,7 +95,7 @@ dsh plugin --profile web add <tarball>                  # 装进 profile
 ## 使用
 
 1. 先启动若干实例：`.\scripts\start-multi.ps1 -Ports "3080,3081,3082,3084"`（或手动 `dsh web --port <n>`）。
-2. 打开任意实例，点侧边栏底部的「多窗口墙」快捷入口（或点对话区头部的「多窗口墙」标签页）。
+2. 打开任意实例，点侧边栏底部的「多窗口」快捷入口（或点对话区头部的「多窗口」标签页）。
 3. 墙视图内：自动发现实例（自动排除自身端口）、列数切换（自动/1/2/3/4/6，默认横向铺满）、点标题放大、⟳ 单独刷新、↗ 新标签页打开、✕ 从视图移除、全部刷新、实时在线状态点。布局保存在 localStorage。
 4. 退出墙：点工具栏**右上角的「退出」按钮**，一键切回对话视图。
 
