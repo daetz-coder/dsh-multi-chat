@@ -1,8 +1,8 @@
-# 🧱 DSH 多窗口墙 · Multi-Window Wall
+# 💬 dsh-multi-chat —— 多对话，一屏驾驭
 
-> **一个浏览器，并排盯住你所有的 AI 任务。** 让 DSH 从「一次一个对话」变成「一屏全景驾驶舱」，还能用手机躺着看进度。
+> **在 DeepSeek Harness 里同时开 N 个对话，并排盯住每一个 Agent 的实时进度，还能用手机躺着看。** 一个浏览器，从「一次一个对话」升级成「全景多对话驾驶舱」。
 
-给 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) 官方 Web 界面装上一个**多窗口墙**：在一张网格里同时显示 N 个正在运行的 DSH 实例（每个实例独立跑一个任务），所有 Agent 的实时进度、对话、输出**一眼尽收**，不用在无数标签页/窗口之间切来切去。
+给 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) 官方 Web 界面装上一面**多窗口墙**：在一张网格里同时显示 N 个正在运行的 DSH 对话实例（每个实例独立跑一个任务），所有 Agent 的实时进度、对话、输出**一眼尽收**，不用在无数标签页/窗口之间切来切去。
 
 ## ✨ 它能做什么
 
@@ -10,11 +10,11 @@
 |------|------|
 | 📺 **多窗口墙** | 侧边栏一键进入，右侧对话区原位变成窗口网格，一个端口一格，并排看全部任务 |
 | 🔍 **自动发现** | 扫描端口区间自动发现正在运行的 DSH 实例，也可手动管理 |
-| ➕ **一键新建窗口** | 墙内直接启动全新 DSH 实例，凑成你的多任务矩阵 |
-| 📱 **手机访问** | 点「手机访问」自动起一个**带口令认证的局域网网关**，手机扫码/输入口令即可看进度 |
+| ➕ **一键新建窗口** | 墙内直接启动全新 DSH 实例，凑成你的多对话矩阵 |
+| 📱 **手机访问** | 点「手机访问」自动起一个**内置带口令认证的局域网网关**，手机打开 URL、输入口令即可看进度 |
 | 🛑 **窗口控制** | 单窗口放大、刷新、新标签页打开、关闭实例、列数切换（自动/1/2/3/4/6）|
 
-> **多任务 = 多端口。** 启动 N 个 `dsh web --port <n>`，每个实例独立跑一个任务；在任意一个实例里打开多窗口墙，即可并排看到全部。
+> **多对话 = 多端口。** 启动 N 个 `dsh web --port <n>`，每个实例独立跑一个对话/任务；在任意一个实例里打开多窗口墙，即可并排看到全部。
 
 ## 🚀 30 秒上手
 
@@ -30,7 +30,7 @@ npx dsh-multi-chat start --ports 3080,3081,3082
 
 ## 为什么这样做
 
-- **不改动任何官方逻辑**：插件只注册两个**增量列表槽位**（`conversation.view` 视图环条目、`sidebar.footer.action` 侧边栏快捷入口）和只读 JSON 探活路由（`/multi/api/ports`、`/multi/api/status`、`/multi/api/stop`）。不替换任何既有槽位、不改写任何行、不触碰会话/代理/工具等核心逻辑。
+- **不改动任何官方逻辑**：插件只注册两个**增量列表槽位**（`conversation.view` 视图环条目、`sidebar.footer.action` 侧边栏快捷入口）和五个只读 JSON 路由（`/multi/api/ports`、`/multi/api/status`、`/multi/api/stop`、`/multi/api/create`、`/multi/api/link`）。不替换任何既有槽位、不改写任何行、不触碰会话/代理/工具等核心逻辑。
 - **界面就是官方界面**：墙是官方视图环的一个视图，渲染在对话主面板内（不是弹层），主题、字号、图标、控件全部走官方 `--dsw-*` token 与官方 primitives（Button/Input/Menu/StateDot）。
 - **递归防护**：墙永远不嵌入自身端口；被嵌入页面带 `?multi-wall=embed` 标记，不注册任何墙界面，杜绝「墙中墙」无限递归。
 - **最小改动**：新增一个 client 插件包 + 一个 patch 行。
@@ -78,26 +78,23 @@ dsh plugin --profile web add <tarball>                  # 装进 profile
 3. 墙视图内：自动发现实例（自动排除自身端口）、列数切换（自动/1/2/3/4/6，默认横向铺满）、点标题放大、⟳ 单独刷新、↗ 新标签页打开、✕ 从视图移除、全部刷新、实时在线状态点。布局保存在 localStorage。
 4. 退出墙：点工具栏**右上角的「退出」按钮**，一键切回对话视图。
 
-## 手机 / 远程访问（认证网关）
+## 手机 / 远程访问（内置认证网关）
 
-官方 `dsh web` 出于安全**刻意禁止 `--host 0.0.0.0`**（会向网络暴露远程代码执行）。因此跨设备访问的正确姿势是：实例保持仅本机回环，在实例前挂一个**带令牌认证的网关**，由网关对外监听 `0.0.0.0`。
+官方 `dsh web` 出于安全**刻意禁止 `--host 0.0.0.0`**（会向网络暴露远程代码执行）。本插件内置了一个**带令牌认证的内联网关**：点工具栏「手机访问」按钮，它会**自动**为本实例启动一个网关（监听 `0.0.0.0`，反向代理到 `127.0.0.1:<本实例端口>`），并返回局域网 URL + 登录口令。
 
-```bash
-# 一个实例 + 一个认证网关（手机在同一内网时打开 http://<局域网IP>:8443 登录）
-node scripts/gateway.mjs --target 127.0.0.1:3080 --listen 0.0.0.0:8443 --token <口令>
-
-# 加密：提供证书即走 HTTPS（跨公网必须，否则用 VPN）
-node scripts/gateway.mjs --target 127.0.0.1:3080 --listen 0.0.0.0:8443 --token <口令> --tls-cert cert.pem --tls-key key.pem
+```text
+点击「手机访问」→ 得到：
+  手机在同一网络时可用：http://10.105.7.204:9477  口令：2efb23eade16
 ```
 
-网关的安全模型：HMAC 签名的 HttpOnly/SameSite 会话 Cookie（默认 12h）、`Authorization: Bearer` 与 `?token=` 供脚本使用、按 IP 限流登录失败；所有代理请求把 Host/Origin 重写为回环目标，官方 `/api` 浏览器信任栅栏（DNS-rebinding 防线）因此判定为本地请求，无需重启加 `--trusted-host`；WebSocket 升级与 SSE 流原样透传。
+手机打开该 URL、输入口令即可进入完整 DSH 界面。网关的安全模型：
 
-`start-multi.ps1` 也能一键带网关启动：
+- HMAC 签名的 HttpOnly/SameSite 会话 Cookie（默认 12h），`?token=` 供脚本快捷使用，按 IP 限流登录失败
+- 所有代理请求把 Host/Origin 重写为回环目标，官方 `/api` 浏览器信任栅栏（DNS-rebinding 防线）判定为本地请求，无需重启加 `--trusted-host`
+- WebSocket 升级与 SSE 流原样透传
+- 目标端口撞上 Windows 排除段或已占用时，自动回退到 OS 分配的空闲端口
 
-```powershell
-.\scripts\start-multi.ps1 -Ports "3080,3081" -Remote -Token "my-secret"
-# 或自签名加密：-TlsCert cert.pem -TlsKey key.pem
-```
+> 也有独立的 `scripts/gateway.mjs`（带可选 TLS）供进阶场景手动使用。
 
 ## 分发与安装
 
