@@ -1,69 +1,62 @@
-# dsh-plugins-multi-task — DSH 多窗口墙 (Multi-Window Wall)
+# dsh-plugins-multi-task — DSH 多窗口墙（官方界面内嵌）
 
-在一个页面里**同时显示多个 DSH 实例**（每个实例一个窗口，`127.0.0.1:<port>` 一个端口），像 tmux 一样平铺排列，不用切换任务栏标签就能看到所有任务的实时进度。**完全不改动 DSH 原有交互逻辑** —— 每个窗口就是原汁原味的 DSH Web UI（iframe 嵌入），本扩展只负责把它们并排摆出来。
+在 **官方 DSH Web 界面内**显示所有正在运行的 DSH 实例：侧边栏底部新增一个「多窗口墙」按钮，点击后打开**全屏墙视图**——一个窗口对应一个端口（`127.0.0.1:<port>`），每个窗口就是**原版 DSH Web UI**（iframe 嵌入），所有任务的进度同时可见，不用切换任务栏标签。
 
-> 背景：多任务 = 多端口。启动 N 个 `dsh web --port <n>`，每个实例独立跑一个任务；墙页面自动发现这些实例并全部显示。
+> 多任务 = 多端口。启动 N 个 `dsh web --port <n>`，每个实例独立跑一个任务；在任意一个实例里打开多窗口墙，即可并排看到全部。
 
----
+## 为什么这样做
 
-## 快速开始（独立服务器，零改动，推荐）
-
-```bash
-# 1) 已有若干 dsh web 实例在跑（如 3080/3081/3082/3084）
-# 2) 启动墙服务器
-node wall/server.mjs            # 默认 :3999，自动扫描 3070-3110 端口
-# 3) 浏览器打开
-http://127.0.0.1:3999
-```
-
-页面会自动发现所有运行中的 DSH 实例并铺成网格；也可以手动「添加端口」。每个窗口可：
-- 点击标题 / ⛶ 放大到全屏（再按 Esc 还原）
-- ⟳ 单独刷新、↗ 新标签页打开、✕ 关闭窗口
-- 调整列数（自动 / 1 / 2 / 3 / 4 / 6），布局保存在 localStorage
-
-### 一键启动 / 停止多个实例 + 墙（Windows）
-
-```powershell
-.\scripts\start-multi.ps1 -Ports "3080,3081,3082,3084"   # 启动 4 个 dsh web + 墙 + 打开浏览器
-.\scripts\start-multi.ps1 -WallOnly                      # 只开墙，复用已在运行的实例
-.\scripts\stop-multi.ps1                                  # 停止上述全部
-```
-
-## 集成进 DSH（可选插件）
-
-把同一面墙挂到现有实例的 `/multi` 路径：见 [plugin/dsh-plugin-multi-wall/README.md](plugin/dsh-plugin-multi-wall/README.md)。
-
-| 方式 | 地址 | 改动量 |
-| --- | --- | --- |
-| 独立墙服务器（推荐） | `http://127.0.0.1:3999` | 不碰 DSH |
-| 插件挂载 | `http://127.0.0.1:<现有端口>/multi` | 新增一个插件行 |
+- **不改动任何官方逻辑**：插件只注册两个**增量列表槽位**（`sidebar.footer.action`、`shell.overlay`）和两个只读 JSON 探活路由（`/multi/api/ports`、`/multi/api/status`）。不替换任何既有槽位、不改写任何行、不触碰会话/代理/工具等核心逻辑。
+- **界面就是官方界面**：墙视图渲染在官方 AppFrame 的 overlay 层内，主题、字号、图标全部走官方 `--dsw-*` token。
+- **最小改动**：新增一个 client 插件包 + 一个 patch 行。
 
 ## 目录结构
 
 ```
-wall/                    独立墙服务器（零依赖 node:http）
-  server.mjs             静态服务 + /api/ports /api/status /api/config
-  public/                墙页面（index.html / wall.css / wall.js）
-plugin/
-  dsh-plugin-multi-wall/ 可选插件：把墙挂到现有实例 /multi
-  sync-assets.mjs        同步 wall/public -> 插件 assets
+plugin/dsh-client-ui-multi-wall/   # 官方规范 client 插件包（node half + browser half）
+  lib/                             # 已构建产物（lib/index.js + lib/client.js + 类型）
+  src/                             # 源码（与官方 monorepo packages/client/ui-multi-wall 一致）
+patches/multi-wall.yml             # 启用插件的 cordis.patch.yml insert 行
 scripts/
-  start-multi.ps1        启动多个 dsh web 实例 + 墙 + 打开浏览器
-  stop-multi.ps1         停止 start-multi 启动的全部进程
+  install-plugin.ps1               # 打包 + 装进 profile + 追加 patch + 提示重启
+  start-multi.ps1 / stop-multi.ps1 # 启停多个 dsh web 实例
+harness-src/                       # 官方 deepseek-harness 源码（开发/构建用）
 ```
 
-## 原理
+## 安装与启用（Windows）
 
-- 每个窗口 = `<iframe src="http://127.0.0.1:<port>/">`，即完整未改动的 DSH Web UI（DSH 响应头无 X-Frame-Options/CSP，可被嵌入）。
-- 墙服务器只做两件事：提供静态页面、探测哪些端口是存活的 DSH 实例（检查响应体含 `__DSH_BOOT__`）。
-- 多任务并行靠多个 `dsh web` 实例本身（多端口），本扩展不替代、不修改任何 DSH 内部逻辑。
+```powershell
+# 1) 打包并装进 web profile，自动追加 patch 行
+.\scripts\install-plugin.ps1
 
-## 开发
+# 2) 重启 dsh web，打开任意实例
+dsh web --port 3084
+# 浏览器打开 http://127.0.0.1:3084 ，侧边栏底部出现「多窗口墙」按钮
+```
+
+或手动：
 
 ```bash
-node plugin/sync-assets.mjs                      # 改过 wall/public 后同步插件资源
-npm test                                         # wall 服务器 + 插件冒烟测试 + 插件 e2e（真实 webserver）
-node wall/test/headless-check.mjs                # 真实浏览器（headless）验证页面自动发现并渲染窗口
+cd plugin/dsh-client-ui-multi-wall && npm pack          # 得到 tarball
+dsh plugin --profile web add <tarball>                  # 装进 profile
+# 把 patches/multi-wall.yml 的 insert 行加进 ~/.dsh/profiles/web/cordis.patch.yml
+```
+
+## 使用
+
+1. 先启动若干实例：`.\scripts\start-multi.ps1 -Ports "3080,3081,3082,3084"`（或手动 `dsh web --port <n>`）。
+2. 打开任意实例，点侧边栏底部的「多窗口墙」。
+3. 墙视图内：自动发现实例 / 手动添加端口、列数切换（自动/1/2/3/4/6）、点标题放大（Esc 退出）、⟳ 单独刷新、↗ 新标签页打开、✕ 关闭窗口、全部刷新、实时在线状态点。布局保存在 localStorage。
+
+## 在官方 monorepo 中的位置
+
+`packages/client/ui-multi-wall` 是遵循官方 client 插件规范的包（tsconfig host/client 分离、tsdown clientBundle、locales zh/en、invariant 伴随、HMR 安全测试），并已接入 `packages/bundle/web-app` 的 dsh.client roster 与 `tsconfig.client.json` 聚合。构建：
+
+```bash
+cd harness-src
+pnpm install
+pnpm --filter @deepseek-ai/dsh-client-ui-multi-wall bundle   # 产出 lib/client.js
+npx vitest run packages/client/ui-multi-wall                 # 9 项测试
 ```
 
 ## License

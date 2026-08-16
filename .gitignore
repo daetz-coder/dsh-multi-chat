@@ -1,10 +1,13 @@
 # Node
 node_modules/
 *.log
+*.tgz
 
 # Runtime state
 .wall-pids.json
-run/
+
+# Official source checkout (dev/build reference; owned by upstream git)
+harness-src/
 
 # OS
 Thumbs.db

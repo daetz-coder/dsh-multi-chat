@@ -1,0 +1,10 @@
+# Enable the multi-window wall inside an existing `dsh web` instance.
+# Paste the insert below into the web profile's patch layer
+# ($DSH_HOME/profiles/web/cordis.patch.yml), or pass via `--patch`:
+#   dsh web --port <n> --patch ./patches/multi-wall.yml
+#
+# The package must be installed in the profile's node_modules first:
+#   dsh plugin --profile web add <path-to-tarball-or-git-url>
+- insert:
+    - id: ui-multi-wall
+      name: '@deepseek-ai/dsh-client-ui-multi-wall'
