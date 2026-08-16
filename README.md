@@ -1,12 +1,36 @@
-# dsh-plugins-multi-task — DSH 多窗口墙（官方界面内嵌）
+# 🧱 DSH 多窗口墙 · Multi-Window Wall
 
-在 **官方 DSH Web 界面内**显示所有正在运行的 DSH 实例：点击「多窗口墙」入口后，**右侧对话区原位替换**为多窗口墙——一个窗口对应一个端口（`127.0.0.1:<port>`），每个窗口就是**原版 DSH Web UI**（iframe 嵌入），所有任务的进度同时可见，不用切换任务栏标签。
+> **一个浏览器，并排盯住你所有的 AI 任务。** 让 DSH 从「一次一个对话」变成「一屏全景驾驶舱」，还能用手机躺着看进度。
 
-> 多任务 = 多端口。启动 N 个 `dsh web --port <n>`，每个实例独立跑一个任务；在任意一个实例里打开多窗口墙，即可并排看到全部。
+给 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) 官方 Web 界面装上一个**多窗口墙**：在一张网格里同时显示 N 个正在运行的 DSH 实例（每个实例独立跑一个任务），所有 Agent 的实时进度、对话、输出**一眼尽收**，不用在无数标签页/窗口之间切来切去。
+
+## ✨ 它能做什么
+
+| 能力 | 说明 |
+|------|------|
+| 📺 **多窗口墙** | 侧边栏一键进入，右侧对话区原位变成窗口网格，一个端口一格，并排看全部任务 |
+| 🔍 **自动发现** | 扫描端口区间自动发现正在运行的 DSH 实例，也可手动管理 |
+| ➕ **一键新建窗口** | 墙内直接启动全新 DSH 实例，凑成你的多任务矩阵 |
+| 📱 **手机访问** | 点「手机访问」自动起一个**带口令认证的局域网网关**，手机扫码/输入口令即可看进度 |
+| 🛑 **窗口控制** | 单窗口放大、刷新、新标签页打开、关闭实例、列数切换（自动/1/2/3/4/6）|
+
+> **多任务 = 多端口。** 启动 N 个 `dsh web --port <n>`，每个实例独立跑一个任务；在任意一个实例里打开多窗口墙，即可并排看到全部。
+
+## 🚀 30 秒上手
+
+```bash
+# 1. 安装（npm / npx，免手工打包补丁）
+npx dsh-multi-chat install
+
+# 2. 启动几个实例
+npx dsh-multi-chat start --ports 3080,3081,3082
+
+# 3. 打开任意实例，点侧边栏底部「多窗口墙」→ 完成 🎉
+```
 
 ## 为什么这样做
 
-- **不改动任何官方逻辑**：插件只注册两个**增量列表槽位**（`conversation.view` 视图环条目、`sidebar.footer.action` 侧边栏快捷入口）和三个只读 JSON 探活路由（`/multi/api/ports`、`/multi/api/status`、`/multi/api/stop`）。不替换任何既有槽位、不改写任何行、不触碰会话/代理/工具等核心逻辑。
+- **不改动任何官方逻辑**：插件只注册两个**增量列表槽位**（`conversation.view` 视图环条目、`sidebar.footer.action` 侧边栏快捷入口）和只读 JSON 探活路由（`/multi/api/ports`、`/multi/api/status`、`/multi/api/stop`）。不替换任何既有槽位、不改写任何行、不触碰会话/代理/工具等核心逻辑。
 - **界面就是官方界面**：墙是官方视图环的一个视图，渲染在对话主面板内（不是弹层），主题、字号、图标、控件全部走官方 `--dsw-*` token 与官方 primitives（Button/Input/Menu/StateDot）。
 - **递归防护**：墙永远不嵌入自身端口；被嵌入页面带 `?multi-wall=embed` 标记，不注册任何墙界面，杜绝「墙中墙」无限递归。
 - **最小改动**：新增一个 client 插件包 + 一个 patch 行。
@@ -24,7 +48,7 @@ scripts/
   gateway.mjs                      # 带令牌认证 / 可选 TLS 的反向代理网关（手机/远程访问）
   gateway-hidden.vbs               # 无窗口启动器：用隐藏窗口方式启动 gateway.mjs（不弹控制台）
   gateway-start.ps1 / gateway-stop.ps1  # 一键静默启动/停止网关
-bin/dsh-multi-wall.mjs             # 跨平台 npx CLI（install/start/stop/gateway）
+bin/dsh-multi-chat.mjs             # 跨平台 npx CLI（install/start/stop/gateway）
 harness-src/                       # 官方 deepseek-harness 源码（开发/构建用）
 ```
 
@@ -77,28 +101,28 @@ node scripts/gateway.mjs --target 127.0.0.1:3080 --listen 0.0.0.0:8443 --token <
 
 ## 分发与安装
 
-仓库内置跨平台 CLI `dsh-multi-wall`（`bin/dsh-multi-wall.mjs`），下面三种渠道都可安装。CLI 的 `install` 会探测 `$DSH_HOME`（缺省 `~/.dsh`）并幂等地追加启用 patch（与 `install-plugin.ps1` 行为一致）。
+仓库内置跨平台 CLI `dsh-multi-chat`（`bin/dsh-multi-chat.mjs`），下面三种渠道都可安装。CLI 的 `install` 会探测 `$DSH_HOME`（缺省 `~/.dsh`）并幂等地追加启用 patch（与 `install-plugin.ps1` 行为一致）。
 
 ### 渠道一：npm / npx（推荐，最省事）
 
 ```bash
 # 发布到 npm 后，任意机器一句话安装
-npx dsh-plugins-multi-task install
+npx dsh-multi-chat install
 
 # 或直接 npx 跑单条命令（无需安装）
-npx dsh-plugins-multi-task start --remote --token <口令> --ports 3080,3081
-npx dsh-plugins-multi-task gateway --target 127.0.0.1:3080 --token <口令>
+npx dsh-multi-chat start --remote --token <口令> --ports 3080,3081
+npx dsh-multi-chat gateway --target 127.0.0.1:3080 --token <口令>
 ```
 
-维护者发布：`npm publish`（无作用域公开包 `dsh-plugins-multi-task`）。
+维护者发布：`npm publish`（无作用域公开包 `dsh-multi-chat`）。
 
 ### 渠道二：GitHub Release
 
-从 [Releases](https://github.com/daetz-coder/dsh-plugins-multi-task/releases) 下载源码 zip/tarball，解压后进目录：
+从 [Releases](https://github.com/daetz-coder/dsh-multi-chat/releases) 下载源码 zip/tarball，解压后进目录：
 
 ```bash
-node bin/dsh-multi-wall.mjs install           # 打包 + dsh plugin add + 追加启用 patch
-node bin/dsh-multi-wall.mjs start --ports 3080,3081
+node bin/dsh-multi-chat.mjs install           # 打包 + dsh plugin add + 追加启用 patch
+node bin/dsh-multi-chat.mjs start --ports 3080,3081
 ```
 
 > 打 tag 后，GitHub 会自动生成 source zip/tarball 资产；也可在 Release 附加 `npm pack` 产出的 `.tgz` 作为离线安装包。
@@ -106,21 +130,21 @@ node bin/dsh-multi-wall.mjs start --ports 3080,3081
 ### 渠道三：git 直接安装
 
 ```bash
-git clone https://github.com/daetz-coder/dsh-plugins-multi-task.git
-cd dsh-plugins-multi-task
+git clone https://github.com/daetz-coder/dsh-multi-chat.git
+cd dsh-multi-chat
 
-node bin/dsh-multi-wall.mjs install           # 装插件
-node bin/dsh-multi-wall.mjs start --ports 3080,3081
-node bin/dsh-multi-wall.mjs gateway --target 127.0.0.1:3080 --token <口令>
+node bin/dsh-multi-chat.mjs install           # 装插件
+node bin/dsh-multi-chat.mjs start --ports 3080,3081
+node bin/dsh-multi-chat.mjs gateway --target 127.0.0.1:3080 --token <口令>
 ```
 
 ### 本仓库直接运行（开发）
 
 ```bash
-node bin/dsh-multi-wall.mjs install
-node bin/dsh-multi-wall.mjs start --ports 3080,3081
-node bin/dsh-multi-wall.mjs stop
-node bin/dsh-multi-wall.mjs gateway --target 127.0.0.1:3080 --token <口令>
+node bin/dsh-multi-chat.mjs install
+node bin/dsh-multi-chat.mjs start --ports 3080,3081
+node bin/dsh-multi-chat.mjs stop
+node bin/dsh-multi-chat.mjs gateway --target 127.0.0.1:3080 --token <口令>
 ```
 
 ## 在官方 monorepo 中的位置

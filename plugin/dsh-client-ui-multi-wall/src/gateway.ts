@@ -375,9 +375,20 @@ export function startGateway(options: GatewayOptions): Promise<GatewayHandle> {
 
   return new Promise((resolve, reject) => {
     const server: Server = createServer(handleSocket)
-    server.once('error', reject)
+    const onError = (error: NodeJS.ErrnoException) => {
+      // EACCES (Windows excluded port range / no bind permission) and
+      // EADDRINUSE (port taken) fall back to an OS-assigned free port.
+      if ((error.code === 'EACCES' || error.code === 'EADDRINUSE') && requestedPort !== 0) {
+        log(`gateway port ${requestedPort} unavailable (${error.code}), using an OS-assigned port`)
+        server.listen(0, '0.0.0.0')
+        return
+      }
+      server.removeListener('error', onError)
+      reject(error)
+    }
+    server.on('error', onError)
     server.listen(requestedPort, '0.0.0.0', () => {
-      server.removeListener('error', reject)
+      server.removeListener('error', onError)
       const address = server.address()
       const assignedPort = typeof address === 'object' && address !== null ? address.port : requestedPort
       log(`gateway listening 0.0.0.0:${assignedPort} -> 127.0.0.1:${targetPort}`)

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * dsh-multi-wall — install / manage the multi-window wall plugin and its
- * authenticated gateway, from anywhere `npx dsh-plugins-multi-task` can run.
+ * dsh-multi-chat — install / manage the multi-window wall plugin and its
+ * authenticated gateway, from anywhere `npx dsh-multi-chat` can run.
  *
  * Subcommands:
  *   install [--profile web]   pack the plugin, `dsh plugin add` it into the
@@ -118,10 +118,10 @@ function readState() {
 /* install                                                           */
 /* ------------------------------------------------------------------ */
 
-const INSTALL_HELP = `dsh-multi-wall install — install the multi-window wall plugin
+const INSTALL_HELP = `dsh-multi-chat install — install the multi-window wall plugin
 
 Usage:
-  dsh-multi-wall install [--profile web]
+  dsh-multi-chat install [--profile web]
 
 Packs plugin/dsh-client-ui-multi-wall, installs the tarball into the profile
 with \`dsh plugin --profile <p> add\`, and appends the enable patch row to
@@ -137,7 +137,7 @@ async function cmdInstall(args) {
     else throw new Error(`unknown install option: ${args[i]}`)
   }
   if (!existsSync(PLUGIN_DIR)) {
-    throw new Error(`plugin directory not found: ${PLUGIN_DIR} — run from the dsh-plugins-multi-task package root`)
+    throw new Error(`plugin directory not found: ${PLUGIN_DIR} — run from the dsh-multi-chat package root`)
   }
 
   // 1) pack the plugin tarball into a STABLE location under DSH home. The
@@ -159,7 +159,7 @@ async function cmdInstall(args) {
   const patchPath = join(dshHome(), 'profiles', profile, 'cordis.patch.yml')
   const insert = [
     '',
-    '# Multi-window wall (dsh-plugins-multi-task): enable the official client',
+    '# Multi-window wall (dsh-multi-chat): enable the official client',
     '# plugin that renders the wall inside the DSH web GUI.',
     '- insert:',
     '    - id: ui-multi-wall',
@@ -183,10 +183,10 @@ async function cmdInstall(args) {
 /* start                                                             */
 /* ------------------------------------------------------------------ */
 
-const START_HELP = `dsh-multi-wall start — start N loopback DSH web instances
+const START_HELP = `dsh-multi-chat start — start N loopback DSH web instances
 
 Usage:
-  dsh-multi-wall start [--ports 3080,3081,3082,3083] [--remote] [--token <secret>]
+  dsh-multi-chat start [--ports 3080,3081,3082,3083] [--remote] [--token <secret>]
                        [--gateway-ports 8080,8081,8082,8083] [--no-open]
 
 Options:
@@ -202,8 +202,8 @@ Options:
   --help                  show this help
 
 Examples:
-  dsh-multi-wall start --ports 3080,3081
-  dsh-multi-wall start --remote --token hunter2 --ports 3080,3081 --gateway-ports 8440,8441
+  dsh-multi-chat start --ports 3080,3081
+  dsh-multi-chat start --remote --token hunter2 --ports 3080,3081 --gateway-ports 8440,8441
 `
 
 async function cmdStart(args) {
@@ -340,10 +340,10 @@ async function reserveGatewayPort(desired, used) {
 /* stop                                                              */
 /* ------------------------------------------------------------------ */
 
-const STOP_HELP = `dsh-multi-wall stop — stop everything \`start\` recorded
+const STOP_HELP = `dsh-multi-chat stop — stop everything \`start\` recorded
 
 Usage:
-  dsh-multi-wall stop
+  dsh-multi-chat stop
 
 Reads ${STATE_FILE} and terminates the recorded dsh instances and gateways.
 `
@@ -380,16 +380,16 @@ async function cmdGateway(args) {
 /* Main.                                                              */
 /* ------------------------------------------------------------------ */
 
-const MAIN_HELP = `dsh-multi-wall — multi-window wall + authenticated remote access for DSH
+const MAIN_HELP = `dsh-multi-chat — multi-window wall + authenticated remote access for DSH
 
 Usage:
-  dsh-multi-wall install [--profile web]      install the wall plugin
-  dsh-multi-wall start [options]              start instances (+ gateways with --remote)
-  dsh-multi-wall stop                         stop what start recorded
-  dsh-multi-wall gateway [options]            run the authenticated gateway
-  dsh-multi-wall --help                       this help
+  dsh-multi-chat install [--profile web]      install the wall plugin
+  dsh-multi-chat start [options]              start instances (+ gateways with --remote)
+  dsh-multi-chat stop                         stop what start recorded
+  dsh-multi-chat gateway [options]            run the authenticated gateway
+  dsh-multi-chat --help                       this help
 
-Run "dsh-multi-wall <cmd> --help" for command details.
+Run "dsh-multi-chat <cmd> --help" for command details.
 `
 
 async function main() {
@@ -409,7 +409,7 @@ async function main() {
         throw new Error(`unknown command: ${cmd}`)
     }
   } catch (error) {
-    process.stderr.write(`[dsh-multi-wall] ${error instanceof Error ? error.message : String(error)}\n`)
+    process.stderr.write(`[dsh-multi-chat] ${error instanceof Error ? error.message : String(error)}\n`)
     process.exit(1)
   }
 }

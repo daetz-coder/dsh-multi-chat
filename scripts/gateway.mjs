@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * dsh-multi-wall gateway — authenticated reverse proxy for one loopback DSH
+ * dsh-multi-chat gateway — authenticated reverse proxy for one loopback DSH
  * instance.
  *
  * The official `dsh web` CLI deliberately forbids `--host 0.0.0.0` ("it would
@@ -47,7 +47,7 @@ import { URL } from 'node:url'
 /* Argument parsing (no deps).                                        */
 /* ------------------------------------------------------------------ */
 
-const HELP = `dsh-multi-wall gateway — authenticated proxy for one loopback DSH instance
+const HELP = `dsh-multi-chat gateway — authenticated proxy for one loopback DSH instance
 
 Usage:
   node scripts/gateway.mjs --target <host:port> [options]

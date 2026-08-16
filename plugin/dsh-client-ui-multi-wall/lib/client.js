@@ -242,27 +242,27 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WallView_module_css_default = {
-			"toolbar": "ouhzTG_toolbar",
-			"paneBody": "ouhzTG_paneBody",
-			"wall": "ouhzTG_wall",
-			"linkText": "ouhzTG_linkText",
-			"controls": "ouhzTG_controls",
-			"paneActions": "ouhzTG_paneActions",
-			"action": "ouhzTG_action",
-			"paneTitle": "ouhzTG_paneTitle",
-			"zoomed": "ouhzTG_zoomed",
-			"pane": "ouhzTG_pane",
-			"field": "ouhzTG_field",
-			"paneHead": "ouhzTG_paneHead",
-			"danger": "ouhzTG_danger",
 			"hint": "ouhzTG_hint",
 			"empty": "ouhzTG_empty",
+			"title": "ouhzTG_title",
 			"dot": "ouhzTG_dot",
 			"confirm": "ouhzTG_confirm",
-			"status": "ouhzTG_status",
+			"wall": "ouhzTG_wall",
+			"pane": "ouhzTG_pane",
+			"field": "ouhzTG_field",
 			"linkBar": "ouhzTG_linkBar",
+			"paneBody": "ouhzTG_paneBody",
+			"controls": "ouhzTG_controls",
+			"linkText": "ouhzTG_linkText",
+			"status": "ouhzTG_status",
+			"paneActions": "ouhzTG_paneActions",
 			"grid": "ouhzTG_grid",
-			"title": "ouhzTG_title"
+			"zoomed": "ouhzTG_zoomed",
+			"paneHead": "ouhzTG_paneHead",
+			"action": "ouhzTG_action",
+			"paneTitle": "ouhzTG_paneTitle",
+			"danger": "ouhzTG_danger",
+			"toolbar": "ouhzTG_toolbar"
 		};
 		//#endregion
 		//#region src/client/WallView.tsx
