@@ -21,7 +21,7 @@ window.__ModuleLoader__.load({
 			"scan.from": "起始端口",
 			"scan.to": "结束端口",
 			"create": "新建窗口",
-			"create.done": "已创建 :{port}",
+			"create.done": "已创建窗口 :{port}",
 			"create.failed": "创建失败：{error}",
 			"create.unknown": "未知原因",
 			"exit": "退出",
@@ -67,7 +67,7 @@ window.__ModuleLoader__.load({
 			"scan.from": "Start port",
 			"scan.to": "End port",
 			"create": "New window",
-			"create.done": "Created :{port}",
+			"create.done": "Created window :{port}",
 			"create.failed": "Create failed: {error}",
 			"create.unknown": "unknown reason",
 			"exit": "Exit",
@@ -242,27 +242,27 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WallView_module_css_default = {
+			"paneTitle": "ouhzTG_paneTitle",
 			"hint": "ouhzTG_hint",
+			"toolbar": "ouhzTG_toolbar",
+			"confirm": "ouhzTG_confirm",
+			"paneActions": "ouhzTG_paneActions",
+			"linkBar": "ouhzTG_linkBar",
+			"grid": "ouhzTG_grid",
+			"paneHead": "ouhzTG_paneHead",
 			"empty": "ouhzTG_empty",
 			"title": "ouhzTG_title",
-			"dot": "ouhzTG_dot",
-			"confirm": "ouhzTG_confirm",
-			"wall": "ouhzTG_wall",
-			"pane": "ouhzTG_pane",
 			"field": "ouhzTG_field",
-			"linkBar": "ouhzTG_linkBar",
-			"paneBody": "ouhzTG_paneBody",
 			"controls": "ouhzTG_controls",
-			"linkText": "ouhzTG_linkText",
-			"status": "ouhzTG_status",
-			"paneActions": "ouhzTG_paneActions",
-			"grid": "ouhzTG_grid",
+			"wall": "ouhzTG_wall",
 			"zoomed": "ouhzTG_zoomed",
-			"paneHead": "ouhzTG_paneHead",
-			"action": "ouhzTG_action",
-			"paneTitle": "ouhzTG_paneTitle",
+			"status": "ouhzTG_status",
+			"pane": "ouhzTG_pane",
 			"danger": "ouhzTG_danger",
-			"toolbar": "ouhzTG_toolbar"
+			"paneBody": "ouhzTG_paneBody",
+			"linkText": "ouhzTG_linkText",
+			"dot": "ouhzTG_dot",
+			"action": "ouhzTG_action"
 		};
 		//#endregion
 		//#region src/client/WallView.tsx
@@ -657,8 +657,8 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WallToggle_module_css_default = {
-			"label": "bmjS6q_label",
-			"row": "bmjS6q_row"
+			"row": "bmjS6q_row",
+			"label": "bmjS6q_label"
 		};
 		//#endregion
 		//#region src/client/WallToggle.tsx

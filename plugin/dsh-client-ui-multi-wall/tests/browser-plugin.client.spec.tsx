@@ -188,7 +188,7 @@ describe('WallView', () => {
     const { getByText } = render(<WallView {...props} />)
     fireEvent.click(getByText('新建窗口'))
     await waitFor(() => expect(props.create).toHaveBeenCalled())
-    await waitFor(() => expect(getByText(/已创建 :3090/)).toBeTruthy())
+    await waitFor(() => expect(getByText(/已创建窗口 :3090/)).toBeTruthy())
   })
 
   it('create failure surfaces the thrown reason instead of a silent stall', async () => {
