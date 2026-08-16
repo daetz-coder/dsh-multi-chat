@@ -1,8 +1,9 @@
 /**
- * Multi-window wall plugin, node half: registers the `/multi/api/*` probe
- * routes on the webserver. The browser half fetches these same-origin to
- * discover which local ports are live DSH instances and to poll liveness.
- * The wall itself is pure UI — this half only answers two small JSON GETs.
+ * Multi-window wall plugin, node half: registers the `/multi/api/*` routes
+ * on the webserver. The browser half fetches these same-origin to discover
+ * which local ports are live DSH instances, to poll liveness, and to
+ * terminate a chosen instance (`/multi/api/stop`). The wall itself is pure
+ * UI — this half answers a few small JSON requests.
  * @module @deepseek-ai/dsh-client-ui-multi-wall
  */
 import type { Context } from '@deepseek-ai/cordis';
@@ -30,6 +31,22 @@ export declare const Config: z<Schemastery.ObjectS<{
     scanTo: z<number, number>;
     ports: z<number[], number[]>;
 }>>;
+/** One stop result row from /multi/api/stop. */
+export interface StopRow {
+    port: number;
+    ok: boolean;
+    /** Human-readable failure reason (absent on success). */
+    error?: string;
+}
+/**
+ * Terminate the DSH instance listening on one local port. Refuses the port
+ * this very instance serves (killing the page hosting the wall would drop
+ * the response mid-flight).
+ * @param port - the target port.
+ * @param selfPort - this instance's own listening port.
+ * @returns the stop result.
+ */
+export declare function stopPort(port: number, selfPort: number): Promise<StopRow>;
 /**
  * Register the probe routes. Everything lives under `/multi/api` so the
  * plugin is purely additive: exact `ports` (auto-discovery) and `status`

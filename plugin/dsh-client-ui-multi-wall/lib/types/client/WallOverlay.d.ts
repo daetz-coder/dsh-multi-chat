@@ -10,5 +10,5 @@ export type WallOverlayProps = PropsRuntime<'shell.overlay'> & PropsStore<Handle
  * @param props - composed slot props.
  * @returns the wall surface or null.
  */
-export declare function WallOverlay({ useStore, actions, discover, probe, t }: WallOverlayProps): import("react").JSX.Element | null;
+export declare function WallOverlay({ useStore, actions, discover, probe, stop, t }: WallOverlayProps): import("react").JSX.Element | null;
 //# sourceMappingURL=WallOverlay.d.ts.map

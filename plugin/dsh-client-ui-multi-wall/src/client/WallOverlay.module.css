@@ -153,9 +153,17 @@
   padding: 2px 6px;
   border-radius: 4px;
   line-height: 1;
+  white-space: nowrap;
 }
 .action:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .action.danger:hover { color: var(--dsw-static-amber-600); }
+.action.danger.confirm {
+  background: var(--dsw-static-amber-500);
+  color: var(--dsw-static-neutral-00);
+  font-size: 11px;
+  padding: 2px 8px;
+}
+.action.danger.confirm:hover { background: var(--dsw-static-amber-600); color: var(--dsw-static-neutral-00); }
 
 .paneBody {
   flex: 1;

@@ -9,7 +9,7 @@
  */
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
-import { cleanup, render, fireEvent } from '@testing-library/react'
+import { cleanup, render, fireEvent, waitFor } from '@testing-library/react'
 import { afterEach } from 'vitest'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
@@ -126,6 +126,30 @@ describe('WallOverlay', () => {
     expect(props.discover).toHaveBeenCalled()
     void getByText('127.0.0.1:3080')
   })
+
+  it('stop requires two clicks and then removes the pane', async () => {
+    const stop = vi.fn(async () => ({ port: 3080, ok: true }))
+    const props = overlayProps({ stop })
+    const { getAllByTitle } = render(<WallOverlay {...props} />)
+    const stopButton = getAllByTitle('关闭实例')[0]
+    expect(stopButton).toBeTruthy()
+    // First click arms the confirm (label swaps), stop not yet called.
+    fireEvent.click(stopButton)
+    expect(stop).not.toHaveBeenCalled()
+    // Second click executes.
+    fireEvent.click(stopButton)
+    await waitFor(() => expect(stop).toHaveBeenCalledWith(3080))
+  })
+
+  it('stop failure surfaces the error and keeps the pane', async () => {
+    const stop = vi.fn(async () => ({ port: 3080, ok: false, error: 'no listener on this port' }))
+    const props = overlayProps({ stop })
+    const { getAllByTitle, getByText } = render(<WallOverlay {...props} />)
+    const stopButton = getAllByTitle('关闭实例')[0]
+    fireEvent.click(stopButton)
+    fireEvent.click(stopButton)
+    await waitFor(() => expect(getByText(/关闭 :3080 失败/)).toBeTruthy())
+  })
 })
 
 describe('ui-multi-wall node half', () => {
@@ -152,10 +176,18 @@ describe('ui-multi-wall node half', () => {
     expect(registered.map(r => `${r.kind} ${r.path}`)).toEqual([
       'exact /multi/api/ports',
       'exact /multi/api/status',
+      'exact /multi/api/stop',
     ])
     await fiber.dispose()
     // Registration disposers are recorded by the fake; the plugin fiber
     // unloads cleanly (HMR safety).
-    expect(registered).toHaveLength(2)
+    expect(registered).toHaveLength(3)
+  })
+
+  it('stopPort refuses the self port', async () => {
+    const { stopPort } = await import('../src/index.ts')
+    const result = await stopPort(3199, 3199)
+    expect(result.ok).toBe(false)
+    expect(result.error).toContain('serving this wall')
   })
 })

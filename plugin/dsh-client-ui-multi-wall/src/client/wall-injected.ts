@@ -10,12 +10,21 @@ export interface ProbeRow {
   status: number
 }
 
+/** One stop result row from /multi/api/stop. */
+export interface StopRow {
+  port: number
+  ok: boolean
+  error?: string
+}
+
 /** The inject face delivered to the wall overlay registration. */
 export interface WallInjected {
   /** Discover live DSH instances (same-origin /multi/api/ports). */
   discover: () => Promise<number[]>
   /** Probe liveness of specific ports (same-origin /multi/api/status). */
   probe: (ports: number[]) => Promise<ProbeRow[]>
+  /** Terminate the DSH instance on one port (same-origin /multi/api/stop). */
+  stop: (port: number) => Promise<StopRow>
 }
 
 /**
@@ -37,6 +46,12 @@ export function createWallInjected(mount = ''): WallInjected {
       if (!res.ok) return []
       const data = (await res.json()) as { ports?: ProbeRow[] }
       return data.ports ?? []
+    },
+    stop: async (port: number) => {
+      const res = await fetch(`${base}/multi/api/stop?port=${port}`, { method: 'POST' })
+      if (!res.ok) return { port, ok: false, error: `HTTP ${res.status}` }
+      const data = (await res.json()) as { ports?: StopRow[] }
+      return data.ports?.[0] ?? { port, ok: false, error: 'no result' }
     },
   }
 }

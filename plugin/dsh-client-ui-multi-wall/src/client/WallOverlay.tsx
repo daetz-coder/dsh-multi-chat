@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
   IconCloseOutline16, IconFullscreenOutline16, IconRefreshOutline16, IconRightUpOutline16,
+  IconStopFill16,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime, PropsStore, TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { HandleOf } from '@deepseek-ai/dsh-client-ui-slots'
@@ -30,19 +31,25 @@ export type WallOverlayProps =
 /** Grid column presets, driven by the toolbar select. */
 const COLUMN_PRESETS = ['auto', '1', '2', '3', '4', '6'] as const
 
+/** The port this very page is served on (the wall's own instance). */
+const SELF_PORT = Number(window.location.port) || 3084
+
 /**
- * One pane: header (port, liveness dot, zoom/refresh/open/remove) plus the
- * embedded original DSH UI.
+ * One pane: header (port, liveness dot, zoom/refresh/open/stop/remove) plus
+ * the embedded original DSH UI.
  */
 function WallPane(props: {
   port: number
   alive: boolean
   zoomed: boolean
+  stopping: boolean
   onZoom: () => void
+  onStop: () => void
   onRemove: () => void
   t: TranslateNS<'multiWall'>
 }) {
-  const { port, alive, zoomed, onZoom, onRemove, t } = props
+  const { port, alive, zoomed, stopping, onZoom, onStop, onRemove, t } = props
+  const self = port === SELF_PORT
   return (
     <section className={clsx(css.pane, zoomed && css.zoomed)} data-port={port}>
       <div className={css.paneHead}>
@@ -62,7 +69,17 @@ function WallPane(props: {
           }}>
             <IconRightUpOutline16 size={14} />
           </button>
-          <button type="button" className={clsx(css.action, css.danger)} title={t('remove')} onClick={onRemove}>
+          {!self && (
+            <button
+              type="button"
+              className={clsx(css.action, css.danger, stopping && css.confirm)}
+              title={self ? t('stop.self') : t('stop')}
+              onClick={onStop}
+            >
+              {stopping ? t('stop.confirm') : <IconStopFill16 size={14} />}
+            </button>
+          )}
+          <button type="button" className={css.action} title={t('remove')} onClick={onRemove}>
             <IconCloseOutline16 size={14} />
           </button>
         </div>
@@ -72,7 +89,6 @@ function WallPane(props: {
           title={`DSH :${port}`}
           src={`http://127.0.0.1:${port}/`}
           loading="lazy"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
         />
       </div>
     </section>
@@ -85,12 +101,13 @@ function WallPane(props: {
  * @param props - composed slot props.
  * @returns the wall surface or null.
  */
-export function WallOverlay({ useStore, actions, discover, probe, t }: WallOverlayProps) {
+export function WallOverlay({ useStore, actions, discover, probe, stop, t }: WallOverlayProps) {
   const open = useStore(s => s.open)
   const ports = useStore(s => s.ports)
   const columns = useStore(s => s.columns)
   const [alive, setAlive] = useState<Record<number, boolean>>({})
   const [zoomedPort, setZoomedPort] = useState<number | null>(null)
+  const [confirmingStop, setConfirmingStop] = useState<number | null>(null)
   const [scanFrom, setScanFrom] = useState(3070)
   const [scanTo, setScanTo] = useState(3110)
   const [status, setStatus] = useState('')
@@ -125,6 +142,28 @@ export function WallOverlay({ useStore, actions, discover, probe, t }: WallOverl
   }, [open, actions])
 
   if (!open) return null
+
+  // Stop is destructive: the first click arms a per-pane confirm, the second
+  // executes it. Any other interaction clears the arm.
+  const handleStop = async (port: number) => {
+    if (confirmingStop !== port) {
+      setConfirmingStop(port)
+      return
+    }
+    setConfirmingStop(null)
+    if (port === SELF_PORT) {
+      setStatus(t('stop.self'))
+      return
+    }
+    const result = await stop(port)
+    if (result.ok) {
+      actions.removePort(port)
+      setAlive(current => ({ ...current, [port]: false }))
+      setStatus(t('stop.done').replace('{port}', String(port)))
+    } else {
+      setStatus(t('stop.failed').replace('{port}', String(port)).replace('{error}', result.error ?? ''))
+    }
+  }
 
   const runDiscovery = async () => {
     setStatus(t('status.scanning').replace('{from}', String(scanFrom)).replace('{to}', String(scanTo)))
@@ -171,8 +210,10 @@ export function WallOverlay({ useStore, actions, discover, probe, t }: WallOverl
             port={port}
             alive={aliveRef.current[port] ?? true}
             zoomed={zoomedPort === port}
+            stopping={confirmingStop === port}
             onZoom={() => setZoomedPort(zoomedPort === port ? null : port)}
-            onRemove={() => actions.removePort(port)}
+            onStop={() => { void handleStop(port) }}
+            onRemove={() => { setConfirmingStop(null); actions.removePort(port) }}
             t={t}
           />
         ))}

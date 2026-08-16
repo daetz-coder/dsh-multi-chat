@@ -16,6 +16,11 @@ export declare const zh: {
     openTab: string;
     reload: string;
     remove: string;
+    stop: string;
+    'stop.confirm': string;
+    'stop.self': string;
+    'stop.done': string;
+    'stop.failed': string;
     zoom: string;
     loading: string;
     empty: string;
@@ -46,6 +51,11 @@ export declare const en: {
     openTab: string;
     reload: string;
     remove: string;
+    stop: string;
+    'stop.confirm': string;
+    'stop.self': string;
+    'stop.done': string;
+    'stop.failed': string;
     zoom: string;
     loading: string;
     empty: string;

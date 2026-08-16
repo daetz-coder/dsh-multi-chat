@@ -24,6 +24,13 @@ export function createWallInjected(mount = '') {
             const data = (await res.json());
             return data.ports ?? [];
         },
+        stop: async (port) => {
+            const res = await fetch(`${base}/multi/api/stop?port=${port}`, { method: 'POST' });
+            if (!res.ok)
+                return { port, ok: false, error: `HTTP ${res.status}` };
+            const data = (await res.json());
+            return data.ports?.[0] ?? { port, ok: false, error: 'no result' };
+        },
     };
 }
 //# sourceMappingURL=wall-injected.js.map

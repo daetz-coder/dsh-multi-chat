@@ -26,7 +26,12 @@ window.__ModuleLoader__.load({
 			"refresh": "全部刷新",
 			"openTab": "新标签页打开",
 			"reload": "重新加载",
-			"remove": "关闭窗口",
+			"remove": "从视图移除",
+			"stop": "关闭实例",
+			"stop.confirm": "确定关闭？",
+			"stop.self": "这是当前界面所在实例，不能关闭",
+			"stop.done": "已关闭 :{port}",
+			"stop.failed": "关闭 :{port} 失败：{error}",
 			"zoom": "放大",
 			"loading": "加载中",
 			"empty": "没有检测到 DSH 实例",
@@ -54,7 +59,12 @@ window.__ModuleLoader__.load({
 			"refresh": "Refresh all",
 			"openTab": "Open in new tab",
 			"reload": "Reload",
-			"remove": "Close window",
+			"remove": "Remove from view",
+			"stop": "Stop instance",
+			"stop.confirm": "Confirm stop?",
+			"stop.self": "This is the instance serving this UI and cannot be stopped",
+			"stop.done": "Stopped :{port}",
+			"stop.failed": "Failed to stop :{port}: {error}",
 			"zoom": "Zoom",
 			"loading": "Loading",
 			"empty": "No DSH instances found",
@@ -129,6 +139,19 @@ window.__ModuleLoader__.load({
 					const res = await fetch(`${base}/multi/api/status?ports=${ports.join(",")}`);
 					if (!res.ok) return [];
 					return (await res.json()).ports ?? [];
+				},
+				stop: async (port) => {
+					const res = await fetch(`${base}/multi/api/stop?port=${port}`, { method: "POST" });
+					if (!res.ok) return {
+						port,
+						ok: false,
+						error: `HTTP ${res.status}`
+					};
+					return (await res.json()).ports?.[0] ?? {
+						port,
+						ok: false,
+						error: "no result"
+					};
 				}
 			};
 		}
@@ -149,7 +172,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:D:\2026AppDev\dsh-plugins-multi-task\harness-src\packages\client\ui-multi-wall\src\client\WallOverlay.module.css.mjs
-		const css$1 = ".Muvhga_wall{z-index:50;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);flex-direction:column;display:flex;position:fixed;inset:0}.Muvhga_toolbar{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);flex-wrap:wrap;flex:none;align-items:center;gap:12px;padding:8px 14px;display:flex}.Muvhga_title{font-size:14px;font-weight:600}.Muvhga_status{color:var(--dsw-alias-label-secondary);flex:1;min-width:120px;font-size:12px}.Muvhga_controls{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.Muvhga_field{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:12px;display:inline-flex}.Muvhga_field input{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);width:64px;color:var(--dsw-alias-label-primary);font:inherit;border-radius:6px;padding:2px 6px;font-size:12px}.Muvhga_field select{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;border-radius:6px;padding:2px 6px;font-size:12px}.Muvhga_btn{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-button-elevated-fill);color:var(--dsw-alias-label-primary);cursor:pointer;font:inherit;border-radius:6px;padding:3px 10px;font-size:12px}.Muvhga_btn:hover{background:var(--dsw-alias-interactive-bg-hover)}.Muvhga_grid{flex:1;grid-auto-rows:minmax(260px,1fr);align-content:start;gap:8px;padding:8px;display:grid;overflow:auto}.Muvhga_grid[data-cols=auto]{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}.Muvhga_grid[data-cols=\"1\"]{grid-template-columns:1fr}.Muvhga_grid[data-cols=\"2\"]{grid-template-columns:repeat(2,1fr)}.Muvhga_grid[data-cols=\"3\"]{grid-template-columns:repeat(3,1fr)}.Muvhga_grid[data-cols=\"4\"]{grid-template-columns:repeat(4,1fr)}.Muvhga_grid[data-cols=\"6\"]{grid-template-columns:repeat(6,1fr)}.Muvhga_pane{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:8px;flex-direction:column;min-width:0;min-height:0;display:flex;overflow:hidden}.Muvhga_pane.Muvhga_zoomed{grid-area:1/1/-1/-1}.Muvhga_paneHead{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-2);flex:none;align-items:center;gap:8px;padding:4px 8px;display:flex}.Muvhga_dot{background:var(--dsw-alias-label-secondary);border-radius:50%;flex:none;width:8px;height:8px}.Muvhga_dot.Muvhga_ok{background:var(--dsw-static-green-500)}.Muvhga_dot.Muvhga_bad{background:var(--dsw-static-amber-600)}.Muvhga_paneTitle{text-overflow:ellipsis;white-space:nowrap;font-family:Consolas,Cascadia Mono,monospace;font-size:12px;overflow:hidden}.Muvhga_paneActions{flex:none;gap:2px;margin-left:auto;display:flex}.Muvhga_action{color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:none;border-radius:4px;padding:2px 6px;line-height:1}.Muvhga_action:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.Muvhga_action.Muvhga_danger:hover{color:var(--dsw-static-amber-600)}.Muvhga_paneBody{flex:1;min-height:0;position:relative}.Muvhga_paneBody iframe{border:none;width:100%;height:100%;display:block}.Muvhga_empty{color:var(--dsw-alias-label-secondary);flex-direction:column;grid-column:1/-1;justify-content:center;align-items:center;gap:6px;display:flex}.Muvhga_empty .Muvhga_hint{font-size:12px}";
+		const css$1 = ".Muvhga_wall{z-index:50;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);flex-direction:column;display:flex;position:fixed;inset:0}.Muvhga_toolbar{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);flex-wrap:wrap;flex:none;align-items:center;gap:12px;padding:8px 14px;display:flex}.Muvhga_title{font-size:14px;font-weight:600}.Muvhga_status{color:var(--dsw-alias-label-secondary);flex:1;min-width:120px;font-size:12px}.Muvhga_controls{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.Muvhga_field{color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:12px;display:inline-flex}.Muvhga_field input{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);width:64px;color:var(--dsw-alias-label-primary);font:inherit;border-radius:6px;padding:2px 6px;font-size:12px}.Muvhga_field select{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit;border-radius:6px;padding:2px 6px;font-size:12px}.Muvhga_btn{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-button-elevated-fill);color:var(--dsw-alias-label-primary);cursor:pointer;font:inherit;border-radius:6px;padding:3px 10px;font-size:12px}.Muvhga_btn:hover{background:var(--dsw-alias-interactive-bg-hover)}.Muvhga_grid{flex:1;grid-auto-rows:minmax(260px,1fr);align-content:start;gap:8px;padding:8px;display:grid;overflow:auto}.Muvhga_grid[data-cols=auto]{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}.Muvhga_grid[data-cols=\"1\"]{grid-template-columns:1fr}.Muvhga_grid[data-cols=\"2\"]{grid-template-columns:repeat(2,1fr)}.Muvhga_grid[data-cols=\"3\"]{grid-template-columns:repeat(3,1fr)}.Muvhga_grid[data-cols=\"4\"]{grid-template-columns:repeat(4,1fr)}.Muvhga_grid[data-cols=\"6\"]{grid-template-columns:repeat(6,1fr)}.Muvhga_pane{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:8px;flex-direction:column;min-width:0;min-height:0;display:flex;overflow:hidden}.Muvhga_pane.Muvhga_zoomed{grid-area:1/1/-1/-1}.Muvhga_paneHead{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-2);flex:none;align-items:center;gap:8px;padding:4px 8px;display:flex}.Muvhga_dot{background:var(--dsw-alias-label-secondary);border-radius:50%;flex:none;width:8px;height:8px}.Muvhga_dot.Muvhga_ok{background:var(--dsw-static-green-500)}.Muvhga_dot.Muvhga_bad{background:var(--dsw-static-amber-600)}.Muvhga_paneTitle{text-overflow:ellipsis;white-space:nowrap;font-family:Consolas,Cascadia Mono,monospace;font-size:12px;overflow:hidden}.Muvhga_paneActions{flex:none;gap:2px;margin-left:auto;display:flex}.Muvhga_action{color:var(--dsw-alias-label-secondary);cursor:pointer;white-space:nowrap;background:0 0;border:none;border-radius:4px;padding:2px 6px;line-height:1}.Muvhga_action:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.Muvhga_action.Muvhga_danger:hover{color:var(--dsw-static-amber-600)}.Muvhga_action.Muvhga_danger.Muvhga_confirm{background:var(--dsw-static-amber-500);color:var(--dsw-static-neutral-00);padding:2px 8px;font-size:11px}.Muvhga_action.Muvhga_danger.Muvhga_confirm:hover{background:var(--dsw-static-amber-600);color:var(--dsw-static-neutral-00)}.Muvhga_paneBody{flex:1;min-height:0;position:relative}.Muvhga_paneBody iframe{border:none;width:100%;height:100%;display:block}.Muvhga_empty{color:var(--dsw-alias-label-secondary);flex-direction:column;grid-column:1/-1;justify-content:center;align-items:center;gap:6px;display:flex}.Muvhga_empty .Muvhga_hint{font-size:12px}";
 		const tagId$1 = "@deepseek-ai/dsh-client-ui-multi-wall/WallOverlay.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
@@ -159,27 +182,28 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WallOverlay_module_css_default = {
-			"pane": "Muvhga_pane",
-			"paneBody": "Muvhga_paneBody",
-			"empty": "Muvhga_empty",
-			"paneHead": "Muvhga_paneHead",
-			"grid": "Muvhga_grid",
-			"toolbar": "Muvhga_toolbar",
-			"wall": "Muvhga_wall",
-			"danger": "Muvhga_danger",
-			"dot": "Muvhga_dot",
-			"btn": "Muvhga_btn",
-			"action": "Muvhga_action",
 			"controls": "Muvhga_controls",
-			"ok": "Muvhga_ok",
-			"title": "Muvhga_title",
-			"hint": "Muvhga_hint",
-			"status": "Muvhga_status",
+			"empty": "Muvhga_empty",
 			"field": "Muvhga_field",
+			"toolbar": "Muvhga_toolbar",
+			"bad": "Muvhga_bad",
+			"status": "Muvhga_status",
+			"paneHead": "Muvhga_paneHead",
+			"wall": "Muvhga_wall",
+			"confirm": "Muvhga_confirm",
 			"zoomed": "Muvhga_zoomed",
-			"paneActions": "Muvhga_paneActions",
+			"title": "Muvhga_title",
+			"btn": "Muvhga_btn",
+			"grid": "Muvhga_grid",
 			"paneTitle": "Muvhga_paneTitle",
-			"bad": "Muvhga_bad"
+			"paneBody": "Muvhga_paneBody",
+			"hint": "Muvhga_hint",
+			"pane": "Muvhga_pane",
+			"dot": "Muvhga_dot",
+			"paneActions": "Muvhga_paneActions",
+			"ok": "Muvhga_ok",
+			"action": "Muvhga_action",
+			"danger": "Muvhga_danger"
 		};
 		//#endregion
 		//#region src/client/WallOverlay.tsx
@@ -203,12 +227,15 @@ window.__ModuleLoader__.load({
 			"4",
 			"6"
 		];
+		/** The port this very page is served on (the wall's own instance). */
+		const SELF_PORT = Number(window.location.port) || 3084;
 		/**
-		* One pane: header (port, liveness dot, zoom/refresh/open/remove) plus the
-		* embedded original DSH UI.
+		* One pane: header (port, liveness dot, zoom/refresh/open/stop/remove) plus
+		* the embedded original DSH UI.
 		*/
 		function WallPane(props) {
-			const { port, alive, zoomed, onZoom, onRemove, t } = props;
+			const { port, alive, zoomed, stopping, onZoom, onStop, onRemove, t } = props;
+			const self = port === SELF_PORT;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 				className: clsx(WallOverlay_module_css_default.pane, zoomed && WallOverlay_module_css_default.zoomed),
 				"data-port": port,
@@ -251,9 +278,16 @@ window.__ModuleLoader__.load({
 									},
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconRightUpOutline16, { size: 14 })
 								}),
+								!self && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+									type: "button",
+									className: clsx(WallOverlay_module_css_default.action, WallOverlay_module_css_default.danger, stopping && WallOverlay_module_css_default.confirm),
+									title: self ? t("stop.self") : t("stop"),
+									onClick: onStop,
+									children: stopping ? t("stop.confirm") : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconStopFill16, { size: 14 })
+								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 									type: "button",
-									className: clsx(WallOverlay_module_css_default.action, WallOverlay_module_css_default.danger),
+									className: WallOverlay_module_css_default.action,
 									title: t("remove"),
 									onClick: onRemove,
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutline16, { size: 14 })
@@ -277,12 +311,13 @@ window.__ModuleLoader__.load({
 		* @param props - composed slot props.
 		* @returns the wall surface or null.
 		*/
-		function WallOverlay({ useStore, actions, discover, probe, t }) {
+		function WallOverlay({ useStore, actions, discover, probe, stop, t }) {
 			const open = useStore((s) => s.open);
 			const ports = useStore((s) => s.ports);
 			const columns = useStore((s) => s.columns);
 			const [alive, setAlive] = (0, react.useState)({});
 			const [zoomedPort, setZoomedPort] = (0, react.useState)(null);
+			const [confirmingStop, setConfirmingStop] = (0, react.useState)(null);
 			const [scanFrom, setScanFrom] = (0, react.useState)(3070);
 			const [scanTo, setScanTo] = (0, react.useState)(3110);
 			const [status, setStatus] = (0, react.useState)("");
@@ -317,6 +352,26 @@ window.__ModuleLoader__.load({
 				};
 			}, [open, actions]);
 			if (!open) return null;
+			const handleStop = async (port) => {
+				if (confirmingStop !== port) {
+					setConfirmingStop(port);
+					return;
+				}
+				setConfirmingStop(null);
+				if (port === SELF_PORT) {
+					setStatus(t("stop.self"));
+					return;
+				}
+				const result = await stop(port);
+				if (result.ok) {
+					actions.removePort(port);
+					setAlive((current) => ({
+						...current,
+						[port]: false
+					}));
+					setStatus(t("stop.done").replace("{port}", String(port)));
+				} else setStatus(t("stop.failed").replace("{port}", String(port)).replace("{error}", result.error ?? ""));
+			};
 			const runDiscovery = async () => {
 				setStatus(t("status.scanning").replace("{from}", String(scanFrom)).replace("{to}", String(scanTo)));
 				const found = await discover();
@@ -408,8 +463,15 @@ window.__ModuleLoader__.load({
 						port,
 						alive: aliveRef.current[port] ?? true,
 						zoomed: zoomedPort === port,
+						stopping: confirmingStop === port,
 						onZoom: () => setZoomedPort(zoomedPort === port ? null : port),
-						onRemove: () => actions.removePort(port),
+						onStop: () => {
+							handleStop(port);
+						},
+						onRemove: () => {
+							setConfirmingStop(null);
+							actions.removePort(port);
+						},
 						t
 					}, port)), ports.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: WallOverlay_module_css_default.empty,

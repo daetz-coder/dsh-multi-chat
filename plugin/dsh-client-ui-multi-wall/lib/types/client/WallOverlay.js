@@ -12,21 +12,24 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  */
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
-import { IconCloseOutline16, IconFullscreenOutline16, IconRefreshOutline16, IconRightUpOutline16, } from '@deepseek-ai/dsh-client-ui-primitives';
+import { IconCloseOutline16, IconFullscreenOutline16, IconRefreshOutline16, IconRightUpOutline16, IconStopFill16, } from '@deepseek-ai/dsh-client-ui-primitives';
 import css from './WallOverlay.module.css';
 /** Grid column presets, driven by the toolbar select. */
 const COLUMN_PRESETS = ['auto', '1', '2', '3', '4', '6'];
+/** The port this very page is served on (the wall's own instance). */
+const SELF_PORT = Number(window.location.port) || 3084;
 /**
- * One pane: header (port, liveness dot, zoom/refresh/open/remove) plus the
- * embedded original DSH UI.
+ * One pane: header (port, liveness dot, zoom/refresh/open/stop/remove) plus
+ * the embedded original DSH UI.
  */
 function WallPane(props) {
-    const { port, alive, zoomed, onZoom, onRemove, t } = props;
+    const { port, alive, zoomed, stopping, onZoom, onStop, onRemove, t } = props;
+    const self = port === SELF_PORT;
     return (_jsxs("section", { className: clsx(css.pane, zoomed && css.zoomed), "data-port": port, children: [_jsxs("div", { className: css.paneHead, children: [_jsx("span", { className: clsx(css.dot, alive ? css.ok : css.bad), "aria-hidden": "true" }), _jsxs("span", { className: css.paneTitle, children: ["127.0.0.1:", port] }), _jsxs("div", { className: css.paneActions, children: [_jsx("button", { type: "button", className: css.action, title: t('zoom'), onClick: onZoom, children: _jsx(IconFullscreenOutline16, { size: 14 }) }), _jsx("button", { type: "button", className: css.action, title: t('reload'), onClick: (e) => {
                                     e.currentTarget.closest('section')?.querySelector('iframe')?.contentWindow?.location.reload();
                                 }, children: _jsx(IconRefreshOutline16, { size: 14 }) }), _jsx("button", { type: "button", className: css.action, title: t('openTab'), onClick: () => {
                                     window.open(`http://127.0.0.1:${port}/`, '_blank');
-                                }, children: _jsx(IconRightUpOutline16, { size: 14 }) }), _jsx("button", { type: "button", className: clsx(css.action, css.danger), title: t('remove'), onClick: onRemove, children: _jsx(IconCloseOutline16, { size: 14 }) })] })] }), _jsx("div", { className: css.paneBody, children: _jsx("iframe", { title: `DSH :${port}`, src: `http://127.0.0.1:${port}/`, loading: "lazy", sandbox: "allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads" }) })] }));
+                                }, children: _jsx(IconRightUpOutline16, { size: 14 }) }), !self && (_jsx("button", { type: "button", className: clsx(css.action, css.danger, stopping && css.confirm), title: self ? t('stop.self') : t('stop'), onClick: onStop, children: stopping ? t('stop.confirm') : _jsx(IconStopFill16, { size: 14 }) })), _jsx("button", { type: "button", className: css.action, title: t('remove'), onClick: onRemove, children: _jsx(IconCloseOutline16, { size: 14 }) })] })] }), _jsx("div", { className: css.paneBody, children: _jsx("iframe", { title: `DSH :${port}`, src: `http://127.0.0.1:${port}/`, loading: "lazy" }) })] }));
 }
 /**
  * Render the wall when open, nothing otherwise. Discovery runs on open;
@@ -34,12 +37,13 @@ function WallPane(props) {
  * @param props - composed slot props.
  * @returns the wall surface or null.
  */
-export function WallOverlay({ useStore, actions, discover, probe, t }) {
+export function WallOverlay({ useStore, actions, discover, probe, stop, t }) {
     const open = useStore(s => s.open);
     const ports = useStore(s => s.ports);
     const columns = useStore(s => s.columns);
     const [alive, setAlive] = useState({});
     const [zoomedPort, setZoomedPort] = useState(null);
+    const [confirmingStop, setConfirmingStop] = useState(null);
     const [scanFrom, setScanFrom] = useState(3070);
     const [scanTo, setScanTo] = useState(3110);
     const [status, setStatus] = useState('');
@@ -78,6 +82,28 @@ export function WallOverlay({ useStore, actions, discover, probe, t }) {
     }, [open, actions]);
     if (!open)
         return null;
+    // Stop is destructive: the first click arms a per-pane confirm, the second
+    // executes it. Any other interaction clears the arm.
+    const handleStop = async (port) => {
+        if (confirmingStop !== port) {
+            setConfirmingStop(port);
+            return;
+        }
+        setConfirmingStop(null);
+        if (port === SELF_PORT) {
+            setStatus(t('stop.self'));
+            return;
+        }
+        const result = await stop(port);
+        if (result.ok) {
+            actions.removePort(port);
+            setAlive(current => ({ ...current, [port]: false }));
+            setStatus(t('stop.done').replace('{port}', String(port)));
+        }
+        else {
+            setStatus(t('stop.failed').replace('{port}', String(port)).replace('{error}', result.error ?? ''));
+        }
+    };
     const runDiscovery = async () => {
         setStatus(t('status.scanning').replace('{from}', String(scanFrom)).replace('{to}', String(scanTo)));
         const found = await discover();
@@ -93,6 +119,6 @@ export function WallOverlay({ useStore, actions, discover, probe, t }) {
                                         f.contentWindow?.location.reload();
                                     });
                                     setStatus(t('status.refreshed'));
-                                }, children: t('refresh') }), _jsx("button", { type: "button", className: css.btn, onClick: () => { actions.setOpen(false); }, children: t('overlay.close') })] })] }), _jsxs("div", { className: css.grid, "data-cols": columns, children: [ports.map(port => (_jsx(WallPane, { port: port, alive: aliveRef.current[port] ?? true, zoomed: zoomedPort === port, onZoom: () => setZoomedPort(zoomedPort === port ? null : port), onRemove: () => actions.removePort(port), t: t }, port))), ports.length === 0 && (_jsxs("div", { className: css.empty, children: [_jsx("p", { children: t('empty') }), _jsx("p", { className: css.hint, children: t('empty.hint') })] }))] })] }));
+                                }, children: t('refresh') }), _jsx("button", { type: "button", className: css.btn, onClick: () => { actions.setOpen(false); }, children: t('overlay.close') })] })] }), _jsxs("div", { className: css.grid, "data-cols": columns, children: [ports.map(port => (_jsx(WallPane, { port: port, alive: aliveRef.current[port] ?? true, zoomed: zoomedPort === port, stopping: confirmingStop === port, onZoom: () => setZoomedPort(zoomedPort === port ? null : port), onStop: () => { void handleStop(port); }, onRemove: () => { setConfirmingStop(null); actions.removePort(port); }, t: t }, port))), ports.length === 0 && (_jsxs("div", { className: css.empty, children: [_jsx("p", { children: t('empty') }), _jsx("p", { className: css.hint, children: t('empty.hint') })] }))] })] }));
 }
 //# sourceMappingURL=WallOverlay.js.map
