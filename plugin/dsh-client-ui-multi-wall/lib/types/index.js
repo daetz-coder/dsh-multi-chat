@@ -7,9 +7,11 @@
  * @module @deepseek-ai/dsh-client-ui-multi-wall
  */
 import { execFile, spawn } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import z from '@deepseek-ai/schemastery';
+import { startGateway } from './gateway';
 /** Stable Cordis plugin name. */
 export const name = 'client-ui-multi-wall';
 /** Services required before the probe routes can be registered. */
@@ -20,6 +22,8 @@ export const Config = z.object({
     scanTo: z.natural().default(3110),
     ports: z.array(z.natural()).default([]),
     publicUrl: z.string().default(''),
+    gatewayPort: z.number().default(0),
+    gatewayToken: z.string().default(''),
 });
 /** MIME for JSON probe answers. */
 const JSON_TYPE = 'application/json; charset=utf-8';
@@ -247,18 +251,66 @@ async function startInstance(launcher, port, timeoutMs = 20000) {
     }
 }
 /**
+ * Interface-name patterns that mark a *virtual* NIC (VM bridge, WSL,
+ * Docker, Hyper-V, VPN adapters, Loopback Pseudo-Instance, etc.). These
+ * interfaces are never reachable from a phone on the same LAN, so they are
+ * dropped from the link list entirely.
+ */
+const VIRTUAL_IFACE_PATTERNS = [
+    /vEthernet/i, // Hyper-V virtual switch
+    /vmware/i, // VMware VMnet adapters
+    /virtualbox/i, // VirtualBox host-only
+    /^vbox/i,
+    /wsl/i, // Windows Subsystem for Linux
+    /docker/i, // Docker / DockerNAT
+    /hyper-v/i,
+    /tap-windows/i, // OpenVPN TAP
+    /^tap/i,
+    /^tun/i, // TUN VPN tunnels
+    /ppp/i,
+    /loopback/i, // Loopback Pseudo-Interface 1
+    /apipa/i, // automatic private IP (169.254.*.*)
+    /^utun/i, // macOS TUN
+    /^awdl/i, // macOS Apple Wireless Direct Link
+    /^llw/i, // macOS low-latency WLAN
+    /^bridge/i,
+    /bluetooth/i,
+];
+/**
+ * Interface-name patterns that mark a *physical* NIC (Wi-Fi / Ethernet).
+ * Matches kept addresses are ordered before any unknown-but-surviving
+ * address so the phone-first address is the machine's real NIC.
+ */
+const PHYSICAL_IFACE_PATTERNS = [
+    /^(wi-?fi|wlan|wireless)/i,
+    /^(eth(ernet)?|以太网|以太)/i,
+    /^(en|wan)[0-9]/i, // macOS en0 / en1
+    /^本地连接/i,
+    /^e[0-9]+$/i, // bare ethernet (linux)
+    /^w[0-9]+$/i, // bare wlan (linux)
+];
+/**
  * The non-loopback IPv4 addresses of this machine (the LAN reachable URLs).
+ * Virtual NICs (VM/WSL/Docker/VPN/loopback pseudo) are filtered out; the
+ * remaining addresses are ordered with physical NICs (Wi-Fi/Ethernet) first
+ * so the phone shows the actually-reachable LAN address at the top.
  * @returns the address list (possibly empty).
  */
 function lanAddresses() {
-    const out = [];
-    for (const ifaces of Object.values(networkInterfaces())) {
+    const candidates = [];
+    for (const [name, ifaces] of Object.entries(networkInterfaces())) {
+        const virtual = VIRTUAL_IFACE_PATTERNS.some(re => re.test(name));
+        const physical = !virtual && PHYSICAL_IFACE_PATTERNS.some(re => re.test(name));
         for (const iface of ifaces ?? []) {
-            if (iface.family === 'IPv4' && !iface.internal)
-                out.push(iface.address);
+            if (iface.family !== 'IPv4' || iface.internal)
+                continue;
+            if (virtual)
+                continue; // drop virtual NICs entirely
+            candidates.push({ address: iface.address, physical });
         }
     }
-    return out;
+    candidates.sort((a, b) => Number(b.physical) - Number(a.physical));
+    return candidates.map(c => c.address);
 }
 /**
  * Register the probe routes. Everything lives under `/multi/api` so the
@@ -271,6 +323,10 @@ export function apply(ctx, config = {}) {
     const scanFrom = config.scanFrom ?? 3070;
     const scanTo = config.scanTo ?? 3110;
     const fixedPorts = config.ports ?? [];
+    // Inline gateway state: lazily started on first `/multi/api/link` call and
+    // reused until the target port changes (or the instance restarts).
+    let gateway = null;
+    let gatewayTargetPort = -1;
     ctx.effect(() => ctx.webServer.register({
         kind: 'exact',
         path: '/multi/api/ports',
@@ -375,10 +431,10 @@ export function apply(ctx, config = {}) {
     }), 'multi-wall: /multi/api/create');
     // The phone-reachable URL for this instance. The official CLI forbids
     // `--host 0.0.0.0` (it would expose remote code execution), so a loopback
-    // instance answers with the machine's LAN addresses plus guidance to run
-    // the authenticated gateway (`dsh-multi-wall gateway`) in front. When the
-    // deployment configures `publicUrl` (a gateway URL), that URL is reported
-    // instead and treated as reachable.
+    // instance is reached from a phone through an auth-gated gateway. When
+    // `publicUrl` is configured, that URL is reported verbatim. Otherwise this
+    // route lazily starts the inline gateway (target 127.0.0.1:<selfPort>) and
+    // answers with the LAN URLs plus the generated/fixed login token.
     // GET /multi/api/link
     ctx.effect(() => ctx.webServer.register({
         kind: 'exact',
@@ -396,16 +452,52 @@ export function apply(ctx, config = {}) {
                 json(res, { port, host, lan: [`${publicUrl}/`], reachable: true });
                 return;
             }
-            const lan = lanAddresses();
-            const urls = lan.map(ip => `http://${ip}:${port}/`);
-            json(res, {
-                port,
-                host,
-                lan: urls,
-                reachable: host !== '127.0.0.1',
-                hint: host === '127.0.0.1'
-                    ? `the official CLI blocks --host 0.0.0.0 for safety (it would expose remote code execution). For phone/remote access run the authenticated gateway in front of this instance: npx dsh-multi-wall gateway --target 127.0.0.1:${port} --listen 0.0.0.0:<gw-port> --token <secret>`
-                    : undefined,
+            // Ensure the inline gateway targets THIS instance's port.
+            const ensureGateway = () => {
+                if (gateway !== null && gatewayTargetPort === port) {
+                    return Promise.resolve(gateway);
+                }
+                // Target changed (or first start): close the stale gateway first.
+                if (gateway !== null) {
+                    gateway.close();
+                    gateway = null;
+                }
+                const token = config.gatewayToken && config.gatewayToken !== '' ? config.gatewayToken : randomBytes(6).toString('hex');
+                const gatewayPort = config.gatewayPort && config.gatewayPort !== 0 ? config.gatewayPort : port + 5000;
+                gatewayTargetPort = port;
+                return startGateway({
+                    targetPort: port,
+                    port: gatewayPort,
+                    token,
+                    name: 'DSH',
+                    log: (msg) => ctx.logger.info(`multi-wall gateway: ${msg}`),
+                }).then(handle => {
+                    gateway = handle;
+                    return handle;
+                });
+            };
+            ensureGateway().then(handle => {
+                const urls = lanAddresses().map(ip => `http://${ip}:${handle.port}/`);
+                json(res, {
+                    port,
+                    host,
+                    lan: urls,
+                    gatewayPort: handle.port,
+                    token: handle.token,
+                    reachable: urls.length > 0,
+                    hint: urls.length === 0
+                        ? 'no LAN address detected; connect this machine to a network first'
+                        : undefined,
+                });
+            }).catch((error) => {
+                ctx.logger.warn(`multi-wall gateway start failed: ${error instanceof Error ? error.message : String(error)}`);
+                json(res, {
+                    port,
+                    host,
+                    lan: [],
+                    reachable: false,
+                    hint: error instanceof Error ? error.message : String(error),
+                }, 500);
             });
         },
     }), 'multi-wall: /multi/api/link');

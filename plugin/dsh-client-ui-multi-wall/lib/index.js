@@ -607,13 +607,67 @@ async function startInstance(launcher, port, timeoutMs = 2e4) {
 	}
 }
 /**
+* Interface-name patterns that mark a *virtual* NIC (VM bridge, WSL,
+* Docker, Hyper-V, VPN adapters, Loopback Pseudo-Instance, etc.). These
+* interfaces are never reachable from a phone on the same LAN, so they are
+* dropped from the link list entirely.
+*/
+const VIRTUAL_IFACE_PATTERNS = [
+	/vEthernet/i,
+	/vmware/i,
+	/virtualbox/i,
+	/^vbox/i,
+	/wsl/i,
+	/docker/i,
+	/hyper-v/i,
+	/tap-windows/i,
+	/^tap/i,
+	/^tun/i,
+	/ppp/i,
+	/loopback/i,
+	/apipa/i,
+	/^utun/i,
+	/^awdl/i,
+	/^llw/i,
+	/^bridge/i,
+	/bluetooth/i
+];
+/**
+* Interface-name patterns that mark a *physical* NIC (Wi-Fi / Ethernet).
+* Matches kept addresses are ordered before any unknown-but-surviving
+* address so the phone-first address is the machine's real NIC.
+*/
+const PHYSICAL_IFACE_PATTERNS = [
+	/^(wi-?fi|wlan|wireless)/i,
+	/^(eth(ernet)?|以太网|以太)/i,
+	/^(en|wan)[0-9]/i,
+	/^本地连接/i,
+	/^e[0-9]+$/i,
+	/^w[0-9]+$/i
+];
+/**
 * The non-loopback IPv4 addresses of this machine (the LAN reachable URLs).
+* Virtual NICs (VM/WSL/Docker/VPN/loopback pseudo) are filtered out; the
+* remaining addresses are ordered with physical NICs (Wi-Fi/Ethernet) first
+* so the phone shows the actually-reachable LAN address at the top.
 * @returns the address list (possibly empty).
 */
 function lanAddresses() {
-	const out = [];
-	for (const ifaces of Object.values(networkInterfaces())) for (const iface of ifaces ?? []) if (iface.family === "IPv4" && !iface.internal) out.push(iface.address);
-	return out;
+	const candidates = [];
+	for (const [name, ifaces] of Object.entries(networkInterfaces())) {
+		const virtual = VIRTUAL_IFACE_PATTERNS.some((re) => re.test(name));
+		const physical = !virtual && PHYSICAL_IFACE_PATTERNS.some((re) => re.test(name));
+		for (const iface of ifaces ?? []) {
+			if (iface.family !== "IPv4" || iface.internal) continue;
+			if (virtual) continue;
+			candidates.push({
+				address: iface.address,
+				physical
+			});
+		}
+	}
+	candidates.sort((a, b) => Number(b.physical) - Number(a.physical));
+	return candidates.map((c) => c.address);
 }
 /**
 * Register the probe routes. Everything lives under `/multi/api` so the

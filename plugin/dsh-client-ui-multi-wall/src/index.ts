@@ -309,17 +309,72 @@ async function startInstance(launcher: Launcher, port: number, timeoutMs = 20000
 }
 
 /**
+ * Interface-name patterns that mark a *virtual* NIC (VM bridge, WSL,
+ * Docker, Hyper-V, VPN adapters, Loopback Pseudo-Instance, etc.). These
+ * interfaces are never reachable from a phone on the same LAN, so they are
+ * dropped from the link list entirely.
+ */
+const VIRTUAL_IFACE_PATTERNS: RegExp[] = [
+  /vEthernet/i, // Hyper-V virtual switch
+  /vmware/i, // VMware VMnet adapters
+  /virtualbox/i, // VirtualBox host-only
+  /^vbox/i,
+  /wsl/i, // Windows Subsystem for Linux
+  /docker/i, // Docker / DockerNAT
+  /hyper-v/i,
+  /tap-windows/i, // OpenVPN TAP
+  /^tap/i,
+  /^tun/i, // TUN VPN tunnels
+  /ppp/i,
+  /loopback/i, // Loopback Pseudo-Interface 1
+  /apipa/i, // automatic private IP (169.254.*.*)
+  /^utun/i, // macOS TUN
+  /^awdl/i, // macOS Apple Wireless Direct Link
+  /^llw/i, // macOS low-latency WLAN
+  /^bridge/i,
+  /bluetooth/i,
+]
+
+/**
+ * Interface-name patterns that mark a *physical* NIC (Wi-Fi / Ethernet).
+ * Matches kept addresses are ordered before any unknown-but-surviving
+ * address so the phone-first address is the machine's real NIC.
+ */
+const PHYSICAL_IFACE_PATTERNS: RegExp[] = [
+  /^(wi-?fi|wlan|wireless)/i,
+  /^(eth(ernet)?|以太网|以太)/i,
+  /^(en|wan)[0-9]/i, // macOS en0 / en1
+  /^本地连接/i,
+  /^e[0-9]+$/i, // bare ethernet (linux)
+  /^w[0-9]+$/i, // bare wlan (linux)
+]
+
+interface LanCandidate {
+  address: string
+  physical: boolean
+  virtual: boolean
+}
+
+/**
  * The non-loopback IPv4 addresses of this machine (the LAN reachable URLs).
+ * Virtual NICs (VM/WSL/Docker/VPN/loopback pseudo) are filtered out; the
+ * remaining addresses are ordered with physical NICs (Wi-Fi/Ethernet) first
+ * so the phone shows the actually-reachable LAN address at the top.
  * @returns the address list (possibly empty).
  */
 function lanAddresses(): string[] {
-  const out: string[] = []
-  for (const ifaces of Object.values(networkInterfaces())) {
+  const candidates: LanCandidate[] = []
+  for (const [name, ifaces] of Object.entries(networkInterfaces())) {
+    const virtual = VIRTUAL_IFACE_PATTERNS.some(re => re.test(name))
+    const physical = !virtual && PHYSICAL_IFACE_PATTERNS.some(re => re.test(name))
     for (const iface of ifaces ?? []) {
-      if (iface.family === 'IPv4' && !iface.internal) out.push(iface.address)
+      if (iface.family !== 'IPv4' || iface.internal) continue
+      if (virtual) continue // drop virtual NICs entirely
+      candidates.push({ address: iface.address, physical, virtual: false })
     }
   }
-  return out
+  candidates.sort((a, b) => Number(b.physical) - Number(a.physical))
+  return candidates.map(c => c.address)
 }
 
 /**

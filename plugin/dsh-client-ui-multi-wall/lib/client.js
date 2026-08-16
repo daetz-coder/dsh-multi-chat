@@ -14,8 +14,8 @@ window.__ModuleLoader__.load({
 		const zh = {
 			"toggle": "多窗口",
 			"toggle.aria": "打开或关闭多窗口",
-			"view.multiWall": "多窗口墙",
-			"overlay.title": "多窗口墙",
+			"view.multiWall": "多窗口",
+			"overlay.title": "多窗口",
 			"overlay.close": "关闭",
 			"scan": "发现实例",
 			"scan.from": "起始端口",
@@ -25,7 +25,7 @@ window.__ModuleLoader__.load({
 			"create.failed": "创建失败：{error}",
 			"create.unknown": "未知原因",
 			"exit": "退出",
-			"exit.aria": "退出多窗口墙，返回对话",
+			"exit.aria": "退出多窗口，返回对话",
 			"link": "手机访问",
 			"link.aria": "获取手机访问链接",
 			"link.fetching": "正在获取链接…",
@@ -60,8 +60,8 @@ window.__ModuleLoader__.load({
 		const en = {
 			"toggle": "Multi-Window",
 			"toggle.aria": "Toggle multi-window",
-			"view.multiWall": "Multi-Window Wall",
-			"overlay.title": "Multi-Window Wall",
+			"view.multiWall": "Multi-Window",
+			"overlay.title": "Multi-Window",
 			"overlay.close": "Close",
 			"scan": "Discover",
 			"scan.from": "Start port",
@@ -71,7 +71,7 @@ window.__ModuleLoader__.load({
 			"create.failed": "Create failed: {error}",
 			"create.unknown": "unknown reason",
 			"exit": "Exit",
-			"exit.aria": "Exit the wall and return to chat",
+			"exit.aria": "Exit multi-window and return to chat",
 			"link": "Phone access",
 			"link.aria": "Get phone access link",
 			"link.fetching": "Fetching link…",
@@ -242,33 +242,33 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WallView_module_css_default = {
-			"paneTitle": "ouhzTG_paneTitle",
-			"hint": "ouhzTG_hint",
-			"toolbar": "ouhzTG_toolbar",
-			"confirm": "ouhzTG_confirm",
-			"paneActions": "ouhzTG_paneActions",
-			"linkBar": "ouhzTG_linkBar",
-			"grid": "ouhzTG_grid",
-			"paneHead": "ouhzTG_paneHead",
-			"empty": "ouhzTG_empty",
-			"title": "ouhzTG_title",
-			"field": "ouhzTG_field",
-			"controls": "ouhzTG_controls",
-			"wall": "ouhzTG_wall",
-			"zoomed": "ouhzTG_zoomed",
-			"status": "ouhzTG_status",
-			"pane": "ouhzTG_pane",
 			"danger": "ouhzTG_danger",
-			"paneBody": "ouhzTG_paneBody",
+			"action": "ouhzTG_action",
+			"confirm": "ouhzTG_confirm",
+			"field": "ouhzTG_field",
+			"wall": "ouhzTG_wall",
+			"grid": "ouhzTG_grid",
+			"hint": "ouhzTG_hint",
+			"status": "ouhzTG_status",
+			"paneTitle": "ouhzTG_paneTitle",
+			"controls": "ouhzTG_controls",
 			"linkText": "ouhzTG_linkText",
+			"paneHead": "ouhzTG_paneHead",
+			"paneBody": "ouhzTG_paneBody",
+			"empty": "ouhzTG_empty",
 			"dot": "ouhzTG_dot",
-			"action": "ouhzTG_action"
+			"toolbar": "ouhzTG_toolbar",
+			"linkBar": "ouhzTG_linkBar",
+			"title": "ouhzTG_title",
+			"pane": "ouhzTG_pane",
+			"paneActions": "ouhzTG_paneActions",
+			"zoomed": "ouhzTG_zoomed"
 		};
 		//#endregion
 		//#region src/client/WallView.tsx
 		/**
 		* WallView: the multi-window wall as a `conversation.view` ring entry. When
-		* the header's "多窗口墙" tab is selected, the right panel swaps from the
+		* the header's "多窗口" tab is selected, the right panel swaps from the
 		* chat to this view — a toolbar plus a grid of iframes, one pane per running
 		* DSH instance (127.0.0.1:<port>). Pure additive UI; no existing slot is
 		* replaced.
@@ -469,7 +469,10 @@ window.__ModuleLoader__.load({
 			const copyFirstLink = async () => {
 				if (linkInfo === null || linkInfo.lan.length === 0) return;
 				try {
-					await navigator.clipboard.writeText(linkInfo.lan[0] ?? "");
+					const base = linkInfo.lan[0] ?? "";
+					const token = linkInfo.token ?? "";
+					const url = token !== "" ? `${base}?token=${encodeURIComponent(token)}` : base;
+					await navigator.clipboard.writeText(url);
 					setLinkCopied(true);
 				} catch {
 					setLinkCopied(false);
@@ -657,15 +660,15 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WallToggle_module_css_default = {
-			"row": "bmjS6q_row",
-			"label": "bmjS6q_label"
+			"label": "bmjS6q_label",
+			"row": "bmjS6q_row"
 		};
 		//#endregion
 		//#region src/client/WallToggle.tsx
 		/**
 		* WallToggle: the sidebar-foot shortcut. Clicking it opens the wall view —
 		* the `conversation.view` ring switches to the 'multi-wall' entry, which the
-		* header renders as the "多窗口墙" tab. The click is a plain user-equivalent
+		* header renders as the "多窗口" tab. The click is a plain user-equivalent
 		* activation: it finds the header's view-ring tab for this plugin's label and
 		* clicks it, so the official view-ring state machine (the chat store's active
 		* view field) performs the switch. No store is declared: the ring decides

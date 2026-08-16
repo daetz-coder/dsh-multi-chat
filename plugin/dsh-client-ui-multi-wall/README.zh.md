@@ -6,7 +6,7 @@
 
 墙的业务状态只有一个 store（`dsh.multi-wall`）：已发现的端口列表与网格列数，跨视图切换与重载均可持久化。发现、探活、新建与关闭全部经服务端只读 JSON 路由完成——`/multi/api/ports`（自动发现，不排除任何端口，因此服务实例自身也可被监视）、`/multi/api/status`（指定端口列表的存活探活）、`/multi/api/stop`（终止所选实例）、`/multi/api/create`（启动全新实例，失败时回传子进程 stderr 等真实原因）、以及 `/multi/api/link`（手机访问）。
 
-手机/远程访问：官方 CLI 出于安全禁止 `--host 0.0.0.0`（会暴露远程代码执行），因此 `/multi/api/link` 会懒启动一个**内联带令牌认证的网关**（基于 `node:net` 的反向代理，HMAC 签名的会话 Cookie 登录，目标为 `127.0.0.1:<self-port>`，重写 Host/Origin 使官方 `/api` 浏览器信任栅栏判定为本地请求，并原样透传 WebSocket 升级）。该路由返回局域网 URL 与登录口令；当目标端口落入 Windows 排除段或已被占用时，网关自动回退到 OS 分配的端口。
+手机/远程访问：官方 CLI 出于安全禁止 `--host 0.0.0.0`（会暴露远程代码执行），因此 `/multi/api/link` 会懒启动一个**内联带令牌认证的网关**（基于 `node:net` 的反向代理，HMAC 签名的会话 Cookie 登录，目标为 `127.0.0.1:<self-port>`，重写 Host/Origin 使官方 `/api` 浏览器信任栅栏判定为本地请求，并原样透传 WebSocket 升级）。该路由返回局域网 URL 与登录口令；返回的地址会过滤掉虚拟网卡（VMware/VirtualBox/WSL/Docker/Hyper-V/VPN 等，手机无法直达），并把物理网卡（Wi-Fi／以太网）排在最前。当目标端口落入 Windows 排除段或已被占用时，网关自动回退到 OS 分配的端口。
 
 `/client` 导出接口包括插件本体（`apply`/`inject`）、`WallView`/`WallToggle` 组件、墙 store 工厂，以及注入的探活面类型。
 

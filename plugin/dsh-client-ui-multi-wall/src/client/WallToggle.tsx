@@ -1,7 +1,7 @@
 /**
  * WallToggle: the sidebar-foot shortcut. Clicking it opens the wall view —
  * the `conversation.view` ring switches to the 'multi-wall' entry, which the
- * header renders as the "多窗口墙" tab. The click is a plain user-equivalent
+ * header renders as the "多窗口" tab. The click is a plain user-equivalent
  * activation: it finds the header's view-ring tab for this plugin's label and
  * clicks it, so the official view-ring state machine (the chat store's active
  * view field) performs the switch. No store is declared: the ring decides

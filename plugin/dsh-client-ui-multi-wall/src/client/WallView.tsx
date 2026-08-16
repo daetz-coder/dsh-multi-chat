@@ -1,6 +1,6 @@
 /**
  * WallView: the multi-window wall as a `conversation.view` ring entry. When
- * the header's "多窗口墙" tab is selected, the right panel swaps from the
+ * the header's "多窗口" tab is selected, the right panel swaps from the
  * chat to this view — a toolbar plus a grid of iframes, one pane per running
  * DSH instance (127.0.0.1:<port>). Pure additive UI; no existing slot is
  * replaced.
@@ -216,10 +216,18 @@ export function WallView({ useStore, actions, discover, probe, stop, create, lin
     setStatus('')
   }
 
+  // Copy the first phone-reachable link to the clipboard. When the gateway
+  // issued a token it is appended as `?token=` so the phone bypasses the login
+  // form entirely (the gateway accepts a matching `?token=` query); the URL is
+  // otherwise the bare link. The standalone token line is still shown above so
+  // users who prefer typing it can.
   const copyFirstLink = async () => {
     if (linkInfo === null || linkInfo.lan.length === 0) return
     try {
-      await navigator.clipboard.writeText(linkInfo.lan[0] ?? '')
+      const base = linkInfo.lan[0] ?? ''
+      const token = linkInfo.token ?? ''
+      const url = token !== '' ? `${base}?token=${encodeURIComponent(token)}` : base
+      await navigator.clipboard.writeText(url)
       setLinkCopied(true)
     } catch {
       setLinkCopied(false)
