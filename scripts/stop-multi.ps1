@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 <#
 .SYNOPSIS
   停止 start-multi.ps1 启动的全部进程（多个 dsh web 实例 + wall 服务器）。

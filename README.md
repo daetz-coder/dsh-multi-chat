@@ -25,6 +25,7 @@ http://127.0.0.1:3999
 
 ```powershell
 .\scripts\start-multi.ps1 -Ports "3080,3081,3082,3084"   # 启动 4 个 dsh web + 墙 + 打开浏览器
+.\scripts\start-multi.ps1 -WallOnly                      # 只开墙，复用已在运行的实例
 .\scripts\stop-multi.ps1                                  # 停止上述全部
 ```
 

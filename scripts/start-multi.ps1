@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 <#
 .SYNOPSIS
   启动多个 DSH web 实例 + 多窗口墙（dsh-multi-wall）。
@@ -21,15 +21,20 @@
 .PARAMETER NoOpen
   不自动打开浏览器。
 
+.PARAMETER WallOnly
+  只启动 wall 服务器（不启动 dsh 实例），适合实例已经在运行的情况。
+
 .EXAMPLE
   .\start-multi.ps1 -Ports "3080,3081,3082,3084"
   .\start-multi.ps1 -Ports "3080,3081" -WallPort 4000 -NoOpen
+  .\start-multi.ps1 -WallOnly          # 只开墙，复用已在跑的实例
 #>
 param(
     [string]$Ports = "3080,3081,3082,3083",
     [int]$WallPort = 3999,
     [string]$ScanRange = "3070-3110",
-    [switch]$NoOpen
+    [switch]$NoOpen,
+    [switch]$WallOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -39,34 +44,39 @@ $serverJs = Join-Path $root "wall\server.mjs"
 
 # 1) 解析端口列表
 $portList = @($Ports -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d+$' })
-if ($portList.Count -eq 0) { throw "没有有效的端口列表：$Ports" }
+if (-not $WallOnly -and $portList.Count -eq 0) { throw "没有有效的端口列表：$Ports" }
 
-# 2) 检查 dsh 是否可用
-$dsh = Get-Command dsh -ErrorAction SilentlyContinue
-if (-not $dsh) { throw "未找到 dsh 命令，请先安装 @deepseek-ai/dsh（npm i -g @deepseek-ai/dsh）" }
-
-# 3) 启动每个 dsh web 实例
+# 2) 启动每个 dsh web 实例（WallOnly 时跳过）
 $pids = @()
 $started = @()
-foreach ($p in $portList) {
-    $proc = Start-Process -FilePath (Get-Command node).Source -ArgumentList @($dsh.Source, "web", "--port", $p) -PassThru -WindowStyle Hidden
-    $pids += $proc.Id
-    $started += $p
-    Write-Host "dsh web --port $p  (pid $($proc.Id))"
-    Start-Sleep -Milliseconds 800
+if (-not $WallOnly) {
+    # 检查 dsh 是否可用
+    $dsh = Get-Command dsh -ErrorAction SilentlyContinue
+    if (-not $dsh) { throw "未找到 dsh 命令，请先安装 @deepseek-ai/dsh（npm i -g @deepseek-ai/dsh）" }
+    foreach ($p in $portList) {
+        $proc = Start-Process -FilePath (Get-Command node).Source -ArgumentList @($dsh.Source, "web", "--port", $p) -PassThru -WindowStyle Hidden
+        $pids += $proc.Id
+        $started += $p
+        Write-Host "dsh web --port $p  (pid $($proc.Id))"
+        Start-Sleep -Milliseconds 800
+    }
 }
 
-# 4) 启动 wall 服务器
+# 3) 启动 wall 服务器
 $wall = Start-Process -FilePath (Get-Command node).Source -ArgumentList @($serverJs, "--port", $WallPort, "--scan", $ScanRange) -PassThru -WindowStyle Hidden
 $pids += $wall.Id
 Write-Host "wall server :$WallPort  (pid $($wall.Id))  http://127.0.0.1:$WallPort"
 
-# 5) 记录 PID 状态
+# 4) 记录 PID 状态
 @{ pid = $pids; ports = $started; wallPort = $WallPort; startedAt = (Get-Date).ToString("o") } | ConvertTo-Json | Set-Content -Path $stateFile -Encoding UTF8
 Write-Host "状态已保存到 $stateFile"
 
-# 6) 打开浏览器
+# 5) 打开浏览器
 if (-not $NoOpen) {
     Start-Process "http://127.0.0.1:$WallPort"
 }
-Write-Host "完成：$($started -join ', ') + wall :$WallPort"
+if ($WallOnly) {
+    Write-Host "完成：仅 wall :$WallPort（复用已在运行的实例）"
+} else {
+    Write-Host "完成：$($started -join ', ') + wall :$WallPort"
+}
