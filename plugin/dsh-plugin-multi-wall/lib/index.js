@@ -89,7 +89,9 @@ function json(res, value, status = 200) {
   res.end(JSON.stringify(value));
 }
 
-function serveAsset(req, res, pathname) {
+/** Serve one asset, injecting a <base> tag into HTML so relative asset URLs
+ * resolve under the mount path (the same page works at "/" and "/multi"). */
+function serveAsset(req, res, pathname, baseHref = "/") {
   const target = resolve(normalize(join(ASSETS, pathname)));
   if (target !== ASSETS && !target.startsWith(ASSETS + sep)) {
     res.writeHead(403);
@@ -98,8 +100,12 @@ function serveAsset(req, res, pathname) {
   }
   readFile(target)
     .then((buf) => {
+      let body = buf;
+      if (extname(target) === ".html") {
+        body = Buffer.from(String(buf).replace("<head>", `<head><base href="${baseHref}">`));
+      }
       res.writeHead(200, { "content-type": MIME[extname(target)] ?? "application/octet-stream" });
-      res.end(buf);
+      res.end(body);
     })
     .catch(() => {
       res.writeHead(404);
@@ -116,6 +122,7 @@ function serveAsset(req, res, pathname) {
  */
 function apply(ctx, config) {
   const mount = config.mount.replace(/\/+$/, "") || "/multi";
+  const baseHref = mount + "/";
 
   ctx.effect(() =>
     ctx.webServer.register({
@@ -127,7 +134,7 @@ function apply(ctx, config) {
           res.end();
           return;
         }
-        serveAsset(req, res, "index.html");
+        serveAsset(req, res, "index.html", baseHref);
       },
     }),
     "multi-wall: mount page",
@@ -150,7 +157,7 @@ function apply(ctx, config) {
         const rest = decodeURIComponent(url.pathname.slice(mount.length)); // starts with '/'
 
         if (rest === "/" || rest === "") {
-          serveAsset(req, res, "index.html");
+          serveAsset(req, res, "index.html", baseHref);
           return;
         }
         if (rest === "/api/ports") {
@@ -187,7 +194,7 @@ function apply(ctx, config) {
           return;
         }
 
-        serveAsset(req, res, rest.slice(1));
+        serveAsset(req, res, rest.slice(1), baseHref);
       },
     }),
     "multi-wall: mount assets + api",

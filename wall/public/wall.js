@@ -16,11 +16,12 @@
   const addPort = document.getElementById("add-port");
   const columnsSel = document.getElementById("columns");
 
-  // Mount-agnostic API base: standalone wall serves at "/", the integrated
-  // plugin variant mounts the same page at "/multi". Both work with this page.
+  // Mount-agnostic API base: the standalone wall serves at "/", the integrated
+  // plugin variant mounts the same page at "/multi" and injects <base href>.
+  // Deriving from the <base> tag keeps the API path correct in both cases.
   const API_BASE = (() => {
-    const dir = location.pathname.replace(/\/[^/]*$/, "");
-    return dir === "" ? "" : dir.replace(/\/+$/, "");
+    const base = document.querySelector("base")?.getAttribute("href") ?? "/";
+    return base.replace(/\/+$/, "");
   })();
 
   const state = loadState();

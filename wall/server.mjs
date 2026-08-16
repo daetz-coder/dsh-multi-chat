@@ -125,11 +125,18 @@ function serveStatic(req, res, pathname) {
   const ext = extname(target) || ".html";
   readFile(target)
     .then((buf) => {
+      let body = buf;
+      // The wall page is served at the root here, but the same page is also
+      // mounted at /multi by the plugin variant; a <base> tag keeps the
+      // relative asset URLs correct in both cases.
+      if (ext === ".html") {
+        body = Buffer.from(String(buf).replace("<head>", `<head><base href="/">`));
+      }
       res.writeHead(200, {
         "content-type": MIME[ext] ?? "application/octet-stream",
         "cache-control": "no-cache",
       });
-      res.end(buf);
+      res.end(body);
     })
     .catch(() => {
       // SPA fallback for unknown paths (the wall is a single page).
