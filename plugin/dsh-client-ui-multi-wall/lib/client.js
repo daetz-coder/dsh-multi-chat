@@ -159,27 +159,27 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WallOverlay_module_css_default = {
-			"paneBody": "Muvhga_paneBody",
-			"hint": "Muvhga_hint",
 			"pane": "Muvhga_pane",
+			"bad": "Muvhga_bad",
+			"grid": "Muvhga_grid",
 			"field": "Muvhga_field",
 			"zoomed": "Muvhga_zoomed",
-			"wall": "Muvhga_wall",
-			"paneActions": "Muvhga_paneActions",
-			"action": "Muvhga_action",
-			"status": "Muvhga_status",
 			"ok": "Muvhga_ok",
-			"controls": "Muvhga_controls",
 			"btn": "Muvhga_btn",
-			"grid": "Muvhga_grid",
-			"dot": "Muvhga_dot",
+			"paneBody": "Muvhga_paneBody",
 			"title": "Muvhga_title",
-			"danger": "Muvhga_danger",
-			"empty": "Muvhga_empty",
+			"status": "Muvhga_status",
+			"dot": "Muvhga_dot",
+			"paneActions": "Muvhga_paneActions",
 			"paneTitle": "Muvhga_paneTitle",
+			"toolbar": "Muvhga_toolbar",
+			"action": "Muvhga_action",
 			"paneHead": "Muvhga_paneHead",
-			"bad": "Muvhga_bad",
-			"toolbar": "Muvhga_toolbar"
+			"wall": "Muvhga_wall",
+			"empty": "Muvhga_empty",
+			"hint": "Muvhga_hint",
+			"controls": "Muvhga_controls",
+			"danger": "Muvhga_danger"
 		};
 		//#endregion
 		//#region src/client/WallOverlay.tsx

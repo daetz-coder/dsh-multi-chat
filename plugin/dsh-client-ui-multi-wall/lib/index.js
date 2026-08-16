@@ -86,8 +86,10 @@ function apply(ctx, config = {}) {
 				return;
 			}
 			const url = new URL(req.url ?? "/", "http://x");
-			const qFrom = Number(url.searchParams.get("from"));
-			const qTo = Number(url.searchParams.get("to"));
+			const qFromRaw = url.searchParams.get("from");
+			const qToRaw = url.searchParams.get("to");
+			const qFrom = qFromRaw !== null ? Number(qFromRaw) : NaN;
+			const qTo = qToRaw !== null ? Number(qToRaw) : NaN;
 			const lo = Number.isInteger(qFrom) ? qFrom : scanFrom;
 			const hi = Number.isInteger(qTo) ? qTo : scanTo;
 			const ports = fixedPorts.length > 0 ? [...fixedPorts] : [];
