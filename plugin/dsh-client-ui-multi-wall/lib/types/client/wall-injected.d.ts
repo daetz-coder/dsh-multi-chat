@@ -1,5 +1,5 @@
 /**
- * Injected probe face for the wall overlay: same-origin fetches to the node
+ * Injected probe face for the wall view: same-origin fetches to the node
  * half's /multi/api routes. Callbacks only — components never see ctx.
  */
 /** One liveness row from /multi/api/status. */
@@ -14,7 +14,24 @@ export interface StopRow {
     ok: boolean;
     error?: string;
 }
-/** The inject face delivered to the wall overlay registration. */
+/** One create result row from /multi/api/create. */
+export interface CreateRow {
+    ok: boolean;
+    port?: number;
+    error?: string;
+}
+/** The phone-reachable link info from /multi/api/link. */
+export interface LinkRow {
+    port: number;
+    host: string;
+    /** LAN URLs (`http://<lan-ip>:<port>/`), possibly empty. */
+    lan: string[];
+    /** Whether the instance is reachable off-loopback (binds 0.0.0.0). */
+    reachable: boolean;
+    /** Human hint when not reachable (restart / tunnel guidance). */
+    hint?: string;
+}
+/** The inject face delivered to the wall view registration. */
 export interface WallInjected {
     /** Discover live DSH instances (same-origin /multi/api/ports). */
     discover: () => Promise<number[]>;
@@ -22,6 +39,10 @@ export interface WallInjected {
     probe: (ports: number[]) => Promise<ProbeRow[]>;
     /** Terminate the DSH instance on one port (same-origin /multi/api/stop). */
     stop: (port: number) => Promise<StopRow>;
+    /** Start a new DSH instance and return its port (same-origin /multi/api/create). */
+    create: () => Promise<CreateRow>;
+    /** The phone-reachable link for this instance (same-origin /multi/api/link). */
+    link: () => Promise<LinkRow>;
 }
 /**
  * Build the probe face bound to this origin's /multi/api routes.

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-multi-wall",
-  "description": "Multi-window wall surface: a sidebar footer action that opens a full-screen wall of every running DSH instance (one pane per port), inside the official web GUI. Additive slots only — no existing row or interaction logic is changed.",
-  "version": "0.1.0-rc.6",
+  "description": "Multi-window wall surface: a sidebar footer action that opens a full-screen wall of every running DSH instance (one pane per port), inside the official web GUI. Additive slots only 鈥?no existing row or interaction logic is changed.",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },
@@ -53,6 +53,7 @@
     "@deepseek-ai/dsh-client-ui-primitives": "workspace:^",
     "@deepseek-ai/dsh-client-ui-sidebar": "workspace:^",
     "@deepseek-ai/dsh-client-ui-slots": "workspace:^",
+    "@deepseek-ai/dsh-client-ui-conversation": "workspace:^",
     "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/cordis": "workspace:^",
     "@deepseek-ai/schemastery": "workspace:^",
@@ -66,6 +67,7 @@
     "@deepseek-ai/dsh-client-ui-primitives": "workspace:^",
     "@deepseek-ai/dsh-client-ui-sidebar": "workspace:^",
     "@deepseek-ai/dsh-client-ui-slots": "workspace:^",
+    "@deepseek-ai/dsh-client-ui-conversation": "workspace:^",
     "@deepseek-ai/dsh-invariants": "workspace:^",
     "@testing-library/react": "^16.1.0",
     "@types/react": "~18.3.1",

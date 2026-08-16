@@ -3,6 +3,9 @@ node_modules/
 *.log
 *.tgz
 
+# Build artifacts (regenerated from harness-src)
+*.tsbuildinfo
+
 # Runtime state
 .wall-pids.json
 

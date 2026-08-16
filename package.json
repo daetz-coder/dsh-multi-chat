@@ -1,10 +1,39 @@
 {
   "name": "dsh-plugins-multi-task",
-  "version": "0.2.0",
-  "private": true,
-  "description": "DSH multi-window wall as an official client plugin: sidebar footer toggle + full-screen wall of every running dsh instance, inside the official web GUI. Zero changes to official interaction logic.",
+  "version": "0.3.0",
+  "description": "DSH multi-window wall as an official client plugin: sidebar footer toggle + full-screen wall of every running dsh instance, inside the official web GUI, plus an authenticated gateway for phone/remote access. Install and manage everything via npx: dsh-multi-wall install|start|stop|gateway.",
   "license": "MIT",
+  "type": "module",
+  "bin": {
+    "dsh-multi-wall": "bin/dsh-multi-wall.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daetz-coder/dsh-plugins-multi-task.git"
+  },
+  "homepage": "https://github.com/daetz-coder/dsh-plugins-multi-task#readme",
+  "bugs": {
+    "url": "https://github.com/daetz-coder/dsh-plugins-multi-task/issues"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "deepseek",
+    "multi-window",
+    "client-plugin",
+    "gateway",
+    "phone-access"
+  ],
+  "files": [
+    "bin/",
+    "scripts/",
+    "patches/",
+    "plugin/"
+  ],
   "scripts": {
     "test": "cd harness-src && npx vitest run packages/client/ui-multi-wall"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

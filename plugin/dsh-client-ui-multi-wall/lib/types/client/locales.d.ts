@@ -3,13 +3,27 @@
 export declare const zh: {
     toggle: string;
     'toggle.aria': string;
+    'view.multiWall': string;
     'overlay.title': string;
     'overlay.close': string;
     scan: string;
     'scan.from': string;
     'scan.to': string;
-    add: string;
-    'add.placeholder': string;
+    create: string;
+    'create.done': string;
+    'create.failed': string;
+    'create.unknown': string;
+    exit: string;
+    'exit.aria': string;
+    link: string;
+    'link.aria': string;
+    'link.fetching': string;
+    'link.none': string;
+    'link.copy': string;
+    'link.copied': string;
+    'link.hint': string;
+    'link.reachable': string;
+    'link.unreachable': string;
     columns: string;
     'columns.auto': string;
     refresh: string;
@@ -28,8 +42,6 @@ export declare const zh: {
     'status.scanning': string;
     'status.found': string;
     'status.none': string;
-    'status.added': string;
-    'status.portRequired': string;
     'status.refreshed': string;
 };
 /** The multi-wall namespace key union. */
@@ -38,13 +50,27 @@ export type MultiWallKey = keyof typeof zh;
 export declare const en: {
     toggle: string;
     'toggle.aria': string;
+    'view.multiWall': string;
     'overlay.title': string;
     'overlay.close': string;
     scan: string;
     'scan.from': string;
     'scan.to': string;
-    add: string;
-    'add.placeholder': string;
+    create: string;
+    'create.done': string;
+    'create.failed': string;
+    'create.unknown': string;
+    exit: string;
+    'exit.aria': string;
+    link: string;
+    'link.aria': string;
+    'link.fetching': string;
+    'link.none': string;
+    'link.copy': string;
+    'link.copied': string;
+    'link.hint': string;
+    'link.reachable': string;
+    'link.unreachable': string;
     columns: string;
     'columns.auto': string;
     refresh: string;
@@ -63,8 +89,6 @@ export declare const en: {
     'status.scanning': string;
     'status.found': string;
     'status.none': string;
-    'status.added': string;
-    'status.portRequired': string;
     'status.refreshed': string;
 };
 //# sourceMappingURL=locales.d.ts.map

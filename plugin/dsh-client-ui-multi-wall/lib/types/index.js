@@ -6,7 +6,9 @@
  * UI — this half answers a few small JSON requests.
  * @module @deepseek-ai/dsh-client-ui-multi-wall
  */
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { networkInterfaces } from 'node:os';
 import z from '@deepseek-ai/schemastery';
 /** Stable Cordis plugin name. */
 export const name = 'client-ui-multi-wall';
@@ -17,6 +19,7 @@ export const Config = z.object({
     scanFrom: z.natural().default(3070),
     scanTo: z.natural().default(3110),
     ports: z.array(z.natural()).default([]),
+    publicUrl: z.string().default(''),
 });
 /** MIME for JSON probe answers. */
 const JSON_TYPE = 'application/json; charset=utf-8';
@@ -119,28 +122,143 @@ async function killPid(pid) {
     }
 }
 /**
- * Terminate the DSH instance listening on one local port. Refuses the port
- * this very instance serves (killing the page hosting the wall would drop
- * the response mid-flight).
+ * Terminate the DSH instance listening on one local port. The port serving
+ * this wall may also be terminated (the user may want to stop the instance
+ * they are viewing): the kill is deferred a beat so the HTTP response is
+ * written before the process dies, then the listener's PIDs are force-killed.
  * @param port - the target port.
  * @param selfPort - this instance's own listening port.
  * @returns the stop result.
  */
 export async function stopPort(port, selfPort) {
-    if (port === selfPort) {
-        return { port, ok: false, error: 'refusing to stop the instance serving this wall' };
-    }
     try {
         const pids = await listeningPids(port);
         if (pids.length === 0) {
             return { port, ok: false, error: 'no listener on this port' };
         }
-        await Promise.all(pids.map(pid => killPid(pid).catch(() => { })));
+        const kill = () => Promise.all(pids.map(pid => killPid(pid).catch(() => { })));
+        if (port === selfPort) {
+            // Let the response flush before taking ourselves down.
+            setTimeout(() => { void kill(); }, 250);
+            return { port, ok: true };
+        }
+        await kill();
         return { port, ok: true };
     }
     catch (error) {
         return { port, ok: false, error: error instanceof Error ? error.message : String(error) };
     }
+}
+/**
+ * Resolve how to launch a new DSH instance. Primary path: the current
+ * process's own entry (`node <bin> web` under `process.argv[1]`), so the new
+ * instance inherits the exact CLI/profile already running. Fallback: the
+ * `dsh` command from PATH when the entry cannot be derived (unusual host
+ * launcher, missing file).
+ * @returns the launcher description.
+ */
+function resolveLauncher() {
+    const first = process.argv[1];
+    if (first !== undefined && existsSync(first)) {
+        return { file: process.execPath, args: [first, 'web', '--port'], shell: false };
+    }
+    return { file: 'dsh', args: ['web', '--port'], shell: process.platform === 'win32' };
+}
+/**
+ * Probe whether a local TCP port is already listening (no HTTP needed).
+ * @param port - the port to check.
+ * @returns whether something listens on it.
+ */
+async function isPortBusy(port) {
+    try {
+        const pids = await listeningPids(port);
+        return pids.length > 0;
+    }
+    catch {
+        return true; // probe failure is treated as busy (fail loud)
+    }
+}
+/**
+ * Pick the first free port in [lo, hi] that is neither the serving port nor
+ * already listening.
+ * @param lo - first port of the range.
+ * @param hi - last port of the range.
+ * @param selfPort - the port serving this wall (never chosen).
+ * @returns a free port, or undefined when the range is exhausted.
+ */
+async function pickFreePort(lo, hi, selfPort) {
+    for (let port = lo; port <= hi; port++) {
+        if (port === selfPort)
+            continue;
+        if (await isPortBusy(port))
+            continue;
+        return port;
+    }
+    return undefined;
+}
+/**
+ * Spawn a new `dsh web` instance on a port and wait until it serves the DSH
+ * shell (probe). Detached so it outlives this process. The child's stderr is
+ * captured and quoted into every failure, so a crash or a bad bin surfaces a
+ * concrete reason instead of a bare timeout.
+ * @param launcher - how to spawn the dsh CLI.
+ * @param port - the port for the new instance.
+ * @param timeoutMs - how long to wait for readiness.
+ * @returns ok plus the port, or ok:false with a reason.
+ */
+async function startInstance(launcher, port, timeoutMs = 20000) {
+    const child = spawn(launcher.file, [...launcher.args, String(port)], {
+        detached: true,
+        stdio: ['ignore', 'ignore', 'pipe'],
+        windowsHide: true,
+        shell: launcher.shell,
+    });
+    child.unref();
+    let stderr = '';
+    // Held by property so flow analysis cannot conclude the closure assignment
+    // never runs (a local assigned only inside a callback narrows to never at
+    // the check).
+    const spawnFailure = { error: null };
+    child.stderr?.on('data', chunk => {
+        stderr += String(chunk);
+        if (stderr.length > 2000)
+            stderr = stderr.slice(-2000);
+    });
+    child.once('error', error => { spawnFailure.error = error; });
+    const detail = () => {
+        const tail = stderr.trim().split(/\r?\n/).slice(-3).join(' | ');
+        return tail === '' ? '' : ` (${tail})`;
+    };
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+        if (spawnFailure.error !== null) {
+            return { ok: false, port, error: `new instance failed to start: ${spawnFailure.error.message}` };
+        }
+        if (child.exitCode !== null) {
+            return { ok: false, port, error: `new instance exited early (code ${child.exitCode})${detail()}` };
+        }
+        const row = await probePort(port);
+        if (row.alive)
+            return { ok: true, port };
+        if (Date.now() > deadline) {
+            return { ok: false, port, error: `instance did not become ready in time${detail()}` };
+        }
+        await new Promise(resolve => setTimeout(resolve, 400));
+    }
+}
+/**
+ * The non-loopback IPv4 addresses of this machine (the LAN reachable URLs).
+ * @returns the address list (possibly empty).
+ */
+function lanAddresses() {
+    const out = [];
+    for (const ifaces of Object.values(networkInterfaces())) {
+        for (const iface of ifaces ?? []) {
+            if (iface.family === 'IPv4' && !iface.internal)
+                out.push(iface.address);
+        }
+    }
+    return out;
 }
 /**
  * Register the probe routes. Everything lives under `/multi/api` so the
@@ -174,6 +292,10 @@ export function apply(ctx, config = {}) {
                 for (let p = lo; p <= hi; p++)
                     ports.push(p);
             }
+            // The serving instance is a discoverable target too: the user may want
+            // to watch (or stop) the very instance hosting the wall. Recursion is
+            // prevented client-side by the ?multi-wall=embed pane flag, not by
+            // hiding the self port.
             probePorts(ports).then(results => {
                 json(res, { ports: results.filter(row => row.alive) });
             }).catch(() => json(res, { ports: [] }, 500));
@@ -218,5 +340,74 @@ export function apply(ctx, config = {}) {
             }).catch(() => json(res, { ports: [] }, 500));
         },
     }), 'multi-wall: /multi/api/stop');
+    // Start a NEW DSH instance and return its port, so the wall can grow a
+    // fresh window without leaving the page. Spawns `dsh web` on the first
+    // free port of the scan range (never the serving port) and waits until it
+    // answers the DSH shell probe.
+    // POST /multi/api/create   (GET also accepted for convenience)
+    ctx.effect(() => ctx.webServer.register({
+        kind: 'exact',
+        path: '/multi/api/create',
+        handler: (req, res) => {
+            if (req.method !== 'GET' && req.method !== 'POST') {
+                res.writeHead(405);
+                res.end();
+                return;
+            }
+            const launcher = resolveLauncher();
+            const selfPort = ctx.webServer.port;
+            void pickFreePort(scanFrom, scanTo, selfPort).then(port => {
+                if (port === undefined) {
+                    json(res, { ok: false, error: `no free port in ${scanFrom}–${scanTo}` }, 409);
+                    return;
+                }
+                return startInstance(launcher, port).then(result => {
+                    json(res, result.ok ? { ok: true, port } : { ok: false, error: result.error }, result.ok ? 200 : 500);
+                    if (!result.ok)
+                        ctx.logger.warn(`multi-wall create failed: ${result.error}`);
+                });
+            }).catch((error) => {
+                const message = error instanceof Error ? error.message : String(error);
+                ctx.logger.warn(`multi-wall create error: ${message}`);
+                json(res, { ok: false, error: message }, 500);
+            });
+        },
+    }), 'multi-wall: /multi/api/create');
+    // The phone-reachable URL for this instance. The official CLI forbids
+    // `--host 0.0.0.0` (it would expose remote code execution), so a loopback
+    // instance answers with the machine's LAN addresses plus guidance to run
+    // the authenticated gateway (`dsh-multi-wall gateway`) in front. When the
+    // deployment configures `publicUrl` (a gateway URL), that URL is reported
+    // instead and treated as reachable.
+    // GET /multi/api/link
+    ctx.effect(() => ctx.webServer.register({
+        kind: 'exact',
+        path: '/multi/api/link',
+        handler: (req, res) => {
+            if (req.method !== 'GET' && req.method !== 'HEAD') {
+                res.writeHead(405);
+                res.end();
+                return;
+            }
+            const port = ctx.webServer.port;
+            const host = ctx.webServer.host;
+            const publicUrl = (config.publicUrl ?? '').replace(/\/+$/, '');
+            if (publicUrl !== '') {
+                json(res, { port, host, lan: [`${publicUrl}/`], reachable: true });
+                return;
+            }
+            const lan = lanAddresses();
+            const urls = lan.map(ip => `http://${ip}:${port}/`);
+            json(res, {
+                port,
+                host,
+                lan: urls,
+                reachable: host !== '127.0.0.1',
+                hint: host === '127.0.0.1'
+                    ? `the official CLI blocks --host 0.0.0.0 for safety (it would expose remote code execution). For phone/remote access run the authenticated gateway in front of this instance: npx dsh-multi-wall gateway --target 127.0.0.1:${port} --listen 0.0.0.0:<gw-port> --token <secret>`
+                    : undefined,
+            });
+        },
+    }), 'multi-wall: /multi/api/link');
 }
 //# sourceMappingURL=index.js.map

@@ -1,7 +1,9 @@
 /**
  * Headless verification that the multi-window wall renders INSIDE the official
- * DSH GUI: opens a dsh instance, waits for the shell, clicks the sidebar
- * footer "多窗口墙" toggle, and reports panes/iframes in the wall overlay.
+ * DSH GUI as a conversation view: opens a dsh instance, waits for the shell,
+ * clicks the sidebar footer "多窗口墙" shortcut (which activates the
+ * 'conversation.view' ring entry — the header tab), and reports panes/iframes
+ * rendered in the right-hand panel in place of the chat.
  *
  * Usage: node plugin/dsh-client-ui-multi-wall/test/gui-check.mjs <url>
  * Requires 'ws' resolvable and Chrome/Edge installed.
@@ -84,37 +86,35 @@ try {
   }
   const shellState = JSON.parse(shell ?? "{}");
   check("official shell mounted (shell.overlay layer present)", !!shellState.hasRoot, `hasRoot=${!!shellState.hasRoot}`);
-  check("sidebar footer wall toggle rendered", shellState.toggleCount >= 1, `toggleCount=${shellState.toggleCount}`);
+  check("sidebar footer wall shortcut rendered", shellState.toggleCount >= 1, `toggleCount=${shellState.toggleCount}`);
 
-  // 2. ensure the wall is OPEN (toggle only when closed — persisted state may
-  // already be open from a previous run)
+  // 2. click the sidebar footer shortcut (opens the wall view). The view
+  // ring's header tab carries the same label; either is a valid activation.
   await evalJs(`(() => {
-    if (!document.querySelector('[aria-label="多窗口墙"]')) {
-      const btn = [...document.querySelectorAll('button')].find(b => b.getAttribute('aria-label') === '打开或关闭多窗口墙' || (b.textContent||'').includes('多窗口墙'));
-      if (btn) btn.click();
-    }
+    const btn = [...document.querySelectorAll('button')].find(b => b.getAttribute('aria-label') === '打开或关闭多窗口墙' || (b.textContent||'').includes('多窗口墙'));
+    if (btn) btn.click();
     return true;
   })()`);
 
-  // 3. wait for the wall overlay to render panes
+  // 3. wait for the wall view to render panes inside the right-hand panel
   let wall = null;
   for (let i = 0; i < 40; i++) {
     await sleep(500);
     wall = await evalJs(`JSON.stringify({
-      wallOpen: !!document.querySelector('[aria-label="多窗口墙"]'),
       panes: document.querySelectorAll('section[data-port]').length,
       iframes: [...document.querySelectorAll('iframe')].filter(f => (f.title||'').startsWith('DSH :')).length,
-      ports: [...document.querySelectorAll('section[data-port] .paneTitle, section[data-port] span')].map(e => e.textContent).filter(t => /127\\.0\\.0\\.1:/.test(t)),
+      viewRegion: !!document.querySelector('[aria-label="多窗口墙"][role="region"]'),
+      ports: [...document.querySelectorAll('section[data-port] span')].map(e => e.textContent).filter(t => /127\\.0\\.0\\.1:/.test(t)),
     })`);
     if (JSON.parse(wall).panes > 0) break;
   }
   const wallState = JSON.parse(wall ?? "{}");
-  check("wall overlay opened", wallState.wallOpen === true, `wallOpen=${wallState.wallOpen}`);
+  check("wall view renders inside the right-hand panel", wallState.viewRegion === true, `viewRegion=${wallState.viewRegion}`);
   check("wall renders panes (one per live instance)", wallState.panes >= 1, `panes=${wallState.panes}`);
   check("each pane embeds an iframe", wallState.iframes === wallState.panes, `iframes=${wallState.iframes} panes=${wallState.panes}`);
   check("no console exceptions", errors.length === 0, errors.length ? errors.join("; ") : "");
 
-  console.log(failures === 0 ? "\nGUI CHECK PASSED ✔ — wall renders inside the official DSH GUI" : `\n${failures} CHECK(S) FAILED ✘`);
+  console.log(failures === 0 ? "\nGUI CHECK PASSED ✔ — wall renders as a conversation view in the official DSH GUI" : `\n${failures} CHECK(S) FAILED ✘`);
   ws.close();
   process.exit(failures === 0 ? 0 : 1);
 } finally {

@@ -20,16 +20,24 @@ export interface MultiWallConfig {
     scanTo?: number;
     /** Optional fixed port list; when set, discovery ignores the scan range. */
     ports?: number[];
+    /**
+     * External base URL reported by `/multi/api/link` (e.g. the authenticated
+     * gateway in front of this loopback instance). When set, the link route
+     * answers `{ lan: [publicUrl + '/'], reachable: true }`.
+     */
+    publicUrl?: string;
 }
 /** Schema-validated config (the Loader resolves defaults for absent keys). */
 export declare const Config: z<Schemastery.ObjectS<{
     scanFrom: z<number, number>;
     scanTo: z<number, number>;
     ports: z<number[], number[]>;
+    publicUrl: z<string, string>;
 }>, Schemastery.ObjectT<{
     scanFrom: z<number, number>;
     scanTo: z<number, number>;
     ports: z<number[], number[]>;
+    publicUrl: z<string, string>;
 }>>;
 /** One stop result row from /multi/api/stop. */
 export interface StopRow {
@@ -39,9 +47,10 @@ export interface StopRow {
     error?: string;
 }
 /**
- * Terminate the DSH instance listening on one local port. Refuses the port
- * this very instance serves (killing the page hosting the wall would drop
- * the response mid-flight).
+ * Terminate the DSH instance listening on one local port. The port serving
+ * this wall may also be terminated (the user may want to stop the instance
+ * they are viewing): the kill is deferred a beat so the HTTP response is
+ * written before the process dies, then the listener's PIDs are force-killed.
  * @param port - the target port.
  * @param selfPort - this instance's own listening port.
  * @returns the stop result.
