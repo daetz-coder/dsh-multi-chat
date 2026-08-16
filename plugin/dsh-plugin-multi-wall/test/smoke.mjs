@@ -63,7 +63,7 @@ const [exact, prefix] = routes;
 assert.equal(exact.kind, "exact");
 assert.equal(exact.path, "/multi");
 assert.equal(prefix.kind, "prefix");
-assert.equal(prefix.path, "/multi/");
+assert.equal(prefix.path, "/multi"); // no trailing slash: match() appends "/"
 console.log("routes registered:", routes.map((r) => `${r.kind} ${r.path}`).join(" | "));
 
 // ── simulate a GET request ─────────────────────────────

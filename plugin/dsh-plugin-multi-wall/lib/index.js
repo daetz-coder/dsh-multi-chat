@@ -135,8 +135,11 @@ function apply(ctx, config) {
 
   ctx.effect(() =>
     ctx.webServer.register({
+      // NB: the webserver match() checks `pathname.startsWith(prefix + "/")`,
+      // so a prefix must NOT end with "/" (a trailing slash would produce a
+      // double slash and never match).
       kind: "prefix",
-      path: mount + "/",
+      path: mount,
       handler: (req, res) => {
         if (req.method !== "GET" && req.method !== "HEAD") {
           res.writeHead(405);
@@ -146,6 +149,10 @@ function apply(ctx, config) {
         const url = new URL(req.url ?? "/", "http://x");
         const rest = decodeURIComponent(url.pathname.slice(mount.length)); // starts with '/'
 
+        if (rest === "/" || rest === "") {
+          serveAsset(req, res, "index.html");
+          return;
+        }
         if (rest === "/api/ports") {
           const ports = [...config.ports];
           if (ports.length === 0) {
