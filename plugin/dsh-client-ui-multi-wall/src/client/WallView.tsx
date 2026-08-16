@@ -42,6 +42,31 @@ const COLUMN_PRESETS = ['auto', '1', '2', '3', '4', '6'] as const
 const EMBED_FLAG = 'multi-wall=embed'
 
 /**
+ * Whether this wall is being viewed through the phone gateway (a non-loopback
+ * host) rather than on the machine running DSH. When remote, pane iframes must
+ * load through the gateway's `/gw/<port>` route — a phone's `127.0.0.1` points
+ * at the phone itself, not the host.
+ */
+function isRemoteViewer(): boolean {
+  const host = typeof window !== 'undefined' ? window.location.hostname : ''
+  return host !== 'localhost' && host !== '127.0.0.1' && host !== '::1'
+}
+
+/**
+ * The iframe URL for a pane. Local viewers embed the loopback instance
+ * directly; remote (phone) viewers route through the gateway that is already
+ * serving this page, appending the port so the gateway proxies to it.
+ * @param port - target DSH instance port.
+ * @returns the pane URL.
+ */
+function paneUrl(port: number): string {
+  if (isRemoteViewer()) {
+    return `${window.location.origin}/gw/${port}/?${EMBED_FLAG}`
+  }
+  return `http://127.0.0.1:${port}/?${EMBED_FLAG}`
+}
+
+/**
  * One pane: header (port, liveness dot, zoom/refresh/open/stop/remove) plus
  * the embedded original DSH UI.
  */
@@ -71,7 +96,7 @@ function WallPane(props: {
             <IconRefreshOutline16 size={14} />
           </button>
           <button type="button" className={css.action} title={t('openTab')} onClick={() => {
-            window.open(`http://127.0.0.1:${port}/`, '_blank')
+            window.open(paneUrl(port), '_blank')
           }}>
             <IconRightUpOutline16 size={14} />
           </button>
@@ -91,7 +116,7 @@ function WallPane(props: {
       <div className={css.paneBody}>
         <iframe
           title={`DSH :${port}`}
-          src={`http://127.0.0.1:${port}/?${EMBED_FLAG}`}
+          src={paneUrl(port)}
           loading="lazy"
         />
       </div>

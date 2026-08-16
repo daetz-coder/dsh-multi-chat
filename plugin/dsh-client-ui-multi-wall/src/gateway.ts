@@ -36,7 +36,7 @@ interface ParsedHead {
 
 /** Options for {@link startGateway}. */
 export interface GatewayOptions {
-  /** Loopback target port (the DSH instance to proxy). */
+  /** Loopback target port (the DSH instance to proxy by default). */
   targetPort: number
   /** Listen port; pass 0 to let the OS pick one. */
   port: number
@@ -46,6 +46,12 @@ export interface GatewayOptions {
   name: string
   /** Session cookie lifetime in hours. */
   maxAgeHours?: number
+  /**
+   * When set, the gateway routes `/gw/<port>/<path>` to `127.0.0.1:<port>`
+   * for any port in this list (the wall's phone panes). Other ports are
+   * rejected, so the phone cannot reach arbitrary loopback services.
+   */
+  routedPorts?: number[]
   /** Log lines (startup, login events). */
   log?: (message: string) => void
 }
@@ -228,11 +234,13 @@ function injectPolyfill(body: Buffer): Buffer | null {
  * `127.0.0.1:<target-port>` so the DSH `/api` browser-trust fence sees a local
  * request. Non-upgrade requests get `connection: close` (fresh connection per
  * request keeps keep-alive from smuggling unrewritten Host headers); upgrades
- * (WebSocket) keep `connection: Upgrade`.
+ * (WebSocket) keep `connection: Upgrade`. When `pathOverride` is set (a
+ * `/gw/<port>` route), the request line's path becomes the de-prefixed path.
  */
-function rewriteHead(parsed: ParsedHead, targetPort: number): string {
+function rewriteHead(parsed: ParsedHead, targetPort: number, pathOverride?: string): string {
   const upgrade = parsed.map.upgrade !== undefined
-  const lines = [`${parsed.method} ${parsed.target} ${parsed.version}`]
+  const requestTarget = pathOverride !== undefined ? pathOverride : parsed.target
+  const lines = [`${parsed.method} ${requestTarget} ${parsed.version}`]
   for (const [name, value] of parsed.headers) {
     if (name === 'host') {
       lines.push(`host: 127.0.0.1:${targetPort}`)
@@ -260,8 +268,11 @@ export function startGateway(options: GatewayOptions): Promise<GatewayHandle> {
     token,
     name,
     maxAgeHours = 12,
+    routedPorts,
     log = () => {},
   } = options
+
+  const allowedRouted = new Set<number>(routedPorts ?? [])
 
   const hmac = (data: string) => createHmac('sha256', token).update(data).digest('hex')
   const signSession = (exp: number) => {
@@ -530,6 +541,23 @@ export function startGateway(options: GatewayOptions): Promise<GatewayHandle> {
         return
       }
 
+      // `/gw/<port>/<path>` routes to a sibling loopback instance (the wall's
+      // phone panes). Only ports the host explicitly allowed are reachable, so
+      // the phone cannot probe arbitrary loopback services.
+      let routePort: number | null = null
+      let routePath: string | undefined
+      const routeMatch = /^\/gw\/(\d+)(\/.*)?$/.exec(path)
+      if (routeMatch !== null) {
+        const candidate = Number(routeMatch[1])
+        if (!Number.isInteger(candidate) || candidate <= 0 || !allowedRouted.has(candidate)) {
+          respondPlain(socket, '403', 'port not routable')
+          return
+        }
+        routePort = candidate
+        routePath = routeMatch[2] && routeMatch[2] !== '' ? routeMatch[2] : '/'
+      }
+      const effectivePort = routePort ?? targetPort
+
       const kind = authKind(parsed)
       if (kind === 'none') {
         respondLogin(socket, name, path === '/' ? '/' : path)
@@ -545,12 +573,12 @@ export function startGateway(options: GatewayOptions): Promise<GatewayHandle> {
         return
       }
 
-      const target = netConnect(targetPort, '127.0.0.1')
+      const target = netConnect(effectivePort, '127.0.0.1')
       const rest = buffer.subarray(parsed.headBytes)
       let connected = false
       target.on('connect', () => {
         connected = true
-        target.write(rewriteHead(parsed, targetPort))
+        target.write(rewriteHead(parsed, effectivePort, routePath))
         if (rest.length > 0) target.write(rest)
         proxying = true
         socket.pipe(target)
@@ -558,7 +586,7 @@ export function startGateway(options: GatewayOptions): Promise<GatewayHandle> {
       })
       target.on('error', (error: NodeJS.ErrnoException) => {
         if (!connected) {
-          respondPlain(socket, '502', `cannot reach target 127.0.0.1:${targetPort}: ${error.message}`)
+          respondPlain(socket, '502', `cannot reach target 127.0.0.1:${effectivePort}: ${error.message}`)
         }
         socket.destroy()
       })

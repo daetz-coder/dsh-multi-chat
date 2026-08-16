@@ -170,11 +170,13 @@ function injectPolyfill(body) {
 * `127.0.0.1:<target-port>` so the DSH `/api` browser-trust fence sees a local
 * request. Non-upgrade requests get `connection: close` (fresh connection per
 * request keeps keep-alive from smuggling unrewritten Host headers); upgrades
-* (WebSocket) keep `connection: Upgrade`.
+* (WebSocket) keep `connection: Upgrade`. When `pathOverride` is set (a
+* `/gw/<port>` route), the request line's path becomes the de-prefixed path.
 */
-function rewriteHead(parsed, targetPort) {
+function rewriteHead(parsed, targetPort, pathOverride) {
 	const upgrade = parsed.map.upgrade !== void 0;
-	const lines = [`${parsed.method} ${parsed.target} ${parsed.version}`];
+	const requestTarget = pathOverride !== void 0 ? pathOverride : parsed.target;
+	const lines = [`${parsed.method} ${requestTarget} ${parsed.version}`];
 	for (const [name, value] of parsed.headers) if (name === "host") lines.push(`host: 127.0.0.1:${targetPort}`);
 	else if (name === "origin") lines.push(`origin: http://127.0.0.1:${targetPort}`);
 	else if (name === "connection" || name === "proxy-connection") {} else lines.push(`${name}: ${value}`);
@@ -187,7 +189,8 @@ function rewriteHead(parsed, targetPort) {
 * @returns a handle with the assigned port and token, and a close().
 */
 function startGateway(options) {
-	const { targetPort, port: requestedPort, token, name, maxAgeHours = 12, log = () => {} } = options;
+	const { targetPort, port: requestedPort, token, name, maxAgeHours = 12, routedPorts, log = () => {} } = options;
+	const allowedRouted = new Set(routedPorts ?? []);
 	const hmac = (data) => createHmac("sha256", token).update(data).digest("hex");
 	const signSession = (exp) => {
 		const payload = Buffer.from(JSON.stringify({ exp })).toString("base64url");
@@ -412,6 +415,19 @@ connection: close\r
 				handleLogin(socket, parsed, buffer.subarray(parsed.headBytes));
 				return;
 			}
+			let routePort = null;
+			let routePath;
+			const routeMatch = /^\/gw\/(\d+)(\/.*)?$/.exec(path);
+			if (routeMatch !== null) {
+				const candidate = Number(routeMatch[1]);
+				if (!Number.isInteger(candidate) || candidate <= 0 || !allowedRouted.has(candidate)) {
+					respondPlain(socket, "403", "port not routable");
+					return;
+				}
+				routePort = candidate;
+				routePath = routeMatch[2] && routeMatch[2] !== "" ? routeMatch[2] : "/";
+			}
+			const effectivePort = routePort ?? targetPort;
 			const kind = authKind(parsed);
 			if (kind === "none") {
 				respondLogin(socket, name, path === "/" ? "/" : path);
@@ -421,19 +437,19 @@ connection: close\r
 				respondSessionRedirect(socket, parsed, `dsh_gw_session=${signSession(Date.now() + maxAgeHours * 36e5)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAgeHours * 3600}`);
 				return;
 			}
-			const target = connect(targetPort, "127.0.0.1");
+			const target = connect(effectivePort, "127.0.0.1");
 			const rest = buffer.subarray(parsed.headBytes);
 			let connected = false;
 			target.on("connect", () => {
 				connected = true;
-				target.write(rewriteHead(parsed, targetPort));
+				target.write(rewriteHead(parsed, effectivePort, routePath));
 				if (rest.length > 0) target.write(rest);
 				proxying = true;
 				socket.pipe(target);
 				relayTarget(socket, target);
 			});
 			target.on("error", (error) => {
-				if (!connected) respondPlain(socket, "502", `cannot reach target 127.0.0.1:${targetPort}: ${error.message}`);
+				if (!connected) respondPlain(socket, "502", `cannot reach target 127.0.0.1:${effectivePort}: ${error.message}`);
 				socket.destroy();
 			});
 			socket.on("error", () => target.destroy());
@@ -817,7 +833,8 @@ function lanAddresses() {
 			if (virtual) continue;
 			candidates.push({
 				address: iface.address,
-				physical
+				physical,
+				virtual: false
 			});
 		}
 	}
@@ -960,11 +977,15 @@ function apply(ctx, config = {}) {
 				const token = config.gatewayToken && config.gatewayToken !== "" ? config.gatewayToken : randomBytes(6).toString("hex");
 				const gatewayPort = config.gatewayPort && config.gatewayPort !== 0 ? config.gatewayPort : port + 5e3;
 				gatewayTargetPort = port;
+				const routed = [];
+				for (let p = scanFrom; p <= scanTo; p++) routed.push(p);
+				for (const p of fixedPorts) if (!routed.includes(p)) routed.push(p);
 				return startGateway({
 					targetPort: port,
 					port: gatewayPort,
 					token,
 					name: "DSH",
+					routedPorts: routed,
 					log: (msg) => ctx.logger.info(`multi-wall gateway: ${msg}`)
 				}).then((handle) => {
 					gateway = handle;

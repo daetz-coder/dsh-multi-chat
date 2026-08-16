@@ -535,11 +535,17 @@ export function apply(ctx: Context, config: MultiWallConfig = {}): void {
         const token = config.gatewayToken && config.gatewayToken !== '' ? config.gatewayToken : randomBytes(6).toString('hex')
         const gatewayPort = config.gatewayPort && config.gatewayPort !== 0 ? config.gatewayPort : port + 5000
         gatewayTargetPort = port
+        // Allow the gateway's `/gw/<port>` route only for ports a DSH instance
+        // can actually live on: the scan range plus any fixed ports.
+        const routed: number[] = []
+        for (let p = scanFrom; p <= scanTo; p++) routed.push(p)
+        for (const p of fixedPorts) if (!routed.includes(p)) routed.push(p)
         return startGateway({
           targetPort: port,
           port: gatewayPort,
           token,
           name: 'DSH',
+          routedPorts: routed,
           log: (msg) => ctx.logger.info(`multi-wall gateway: ${msg}`),
         }).then(handle => {
           gateway = handle

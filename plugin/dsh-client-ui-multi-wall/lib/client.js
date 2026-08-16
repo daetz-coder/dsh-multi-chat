@@ -242,27 +242,27 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WallView_module_css_default = {
-			"danger": "ouhzTG_danger",
-			"action": "ouhzTG_action",
-			"confirm": "ouhzTG_confirm",
-			"field": "ouhzTG_field",
+			"paneActions": "ouhzTG_paneActions",
+			"linkBar": "ouhzTG_linkBar",
 			"wall": "ouhzTG_wall",
-			"grid": "ouhzTG_grid",
+			"action": "ouhzTG_action",
+			"danger": "ouhzTG_danger",
+			"paneBody": "ouhzTG_paneBody",
+			"title": "ouhzTG_title",
 			"hint": "ouhzTG_hint",
+			"empty": "ouhzTG_empty",
+			"zoomed": "ouhzTG_zoomed",
+			"field": "ouhzTG_field",
+			"paneHead": "ouhzTG_paneHead",
 			"status": "ouhzTG_status",
 			"paneTitle": "ouhzTG_paneTitle",
-			"controls": "ouhzTG_controls",
-			"linkText": "ouhzTG_linkText",
-			"paneHead": "ouhzTG_paneHead",
-			"paneBody": "ouhzTG_paneBody",
-			"empty": "ouhzTG_empty",
+			"grid": "ouhzTG_grid",
 			"dot": "ouhzTG_dot",
-			"toolbar": "ouhzTG_toolbar",
-			"linkBar": "ouhzTG_linkBar",
-			"title": "ouhzTG_title",
 			"pane": "ouhzTG_pane",
-			"paneActions": "ouhzTG_paneActions",
-			"zoomed": "ouhzTG_zoomed"
+			"confirm": "ouhzTG_confirm",
+			"toolbar": "ouhzTG_toolbar",
+			"controls": "ouhzTG_controls",
+			"linkText": "ouhzTG_linkText"
 		};
 		//#endregion
 		//#region src/client/WallView.tsx
@@ -293,6 +293,27 @@ window.__ModuleLoader__.load({
 		];
 		/** Embed flag appended to every pane URL; such pages register no wall UI. */
 		const EMBED_FLAG = "multi-wall=embed";
+		/**
+		* Whether this wall is being viewed through the phone gateway (a non-loopback
+		* host) rather than on the machine running DSH. When remote, pane iframes must
+		* load through the gateway's `/gw/<port>` route — a phone's `127.0.0.1` points
+		* at the phone itself, not the host.
+		*/
+		function isRemoteViewer() {
+			const host = typeof window !== "undefined" ? window.location.hostname : "";
+			return host !== "localhost" && host !== "127.0.0.1" && host !== "::1";
+		}
+		/**
+		* The iframe URL for a pane. Local viewers embed the loopback instance
+		* directly; remote (phone) viewers route through the gateway that is already
+		* serving this page, appending the port so the gateway proxies to it.
+		* @param port - target DSH instance port.
+		* @returns the pane URL.
+		*/
+		function paneUrl(port) {
+			if (isRemoteViewer()) return `${window.location.origin}/gw/${port}/?${EMBED_FLAG}`;
+			return `http://127.0.0.1:${port}/?${EMBED_FLAG}`;
+		}
 		/**
 		* One pane: header (port, liveness dot, zoom/refresh/open/stop/remove) plus
 		* the embedded original DSH UI.
@@ -338,7 +359,7 @@ window.__ModuleLoader__.load({
 									className: WallView_module_css_default.action,
 									title: t("openTab"),
 									onClick: () => {
-										window.open(`http://127.0.0.1:${port}/`, "_blank");
+										window.open(paneUrl(port), "_blank");
 									},
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconRightUpOutline16, { size: 14 })
 								}),
@@ -363,7 +384,7 @@ window.__ModuleLoader__.load({
 					className: WallView_module_css_default.paneBody,
 					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("iframe", {
 						title: `DSH :${port}`,
-						src: `http://127.0.0.1:${port}/?${EMBED_FLAG}`,
+						src: paneUrl(port),
 						loading: "lazy"
 					})
 				})]
@@ -660,8 +681,8 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WallToggle_module_css_default = {
-			"label": "bmjS6q_label",
-			"row": "bmjS6q_row"
+			"row": "bmjS6q_row",
+			"label": "bmjS6q_label"
 		};
 		//#endregion
 		//#region src/client/WallToggle.tsx

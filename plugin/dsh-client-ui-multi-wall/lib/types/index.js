@@ -306,7 +306,7 @@ function lanAddresses() {
                 continue;
             if (virtual)
                 continue; // drop virtual NICs entirely
-            candidates.push({ address: iface.address, physical });
+            candidates.push({ address: iface.address, physical, virtual: false });
         }
     }
     candidates.sort((a, b) => Number(b.physical) - Number(a.physical));
@@ -465,11 +465,20 @@ export function apply(ctx, config = {}) {
                 const token = config.gatewayToken && config.gatewayToken !== '' ? config.gatewayToken : randomBytes(6).toString('hex');
                 const gatewayPort = config.gatewayPort && config.gatewayPort !== 0 ? config.gatewayPort : port + 5000;
                 gatewayTargetPort = port;
+                // Allow the gateway's `/gw/<port>` route only for ports a DSH instance
+                // can actually live on: the scan range plus any fixed ports.
+                const routed = [];
+                for (let p = scanFrom; p <= scanTo; p++)
+                    routed.push(p);
+                for (const p of fixedPorts)
+                    if (!routed.includes(p))
+                        routed.push(p);
                 return startGateway({
                     targetPort: port,
                     port: gatewayPort,
                     token,
                     name: 'DSH',
+                    routedPorts: routed,
                     log: (msg) => ctx.logger.info(`multi-wall gateway: ${msg}`),
                 }).then(handle => {
                     gateway = handle;
