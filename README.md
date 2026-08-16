@@ -60,8 +60,9 @@ scripts/
 ## 开发
 
 ```bash
-node plugin/sync-assets.mjs                     # 改过 wall/public 后同步插件资源
-node plugin/dsh-plugin-multi-wall/test/smoke.mjs # 插件冒烟测试
+node plugin/sync-assets.mjs                      # 改过 wall/public 后同步插件资源
+npm test                                         # wall 服务器 + 插件冒烟测试 + 插件 e2e（真实 webserver）
+node wall/test/headless-check.mjs                # 真实浏览器（headless）验证页面自动发现并渲染窗口
 ```
 
 ## License

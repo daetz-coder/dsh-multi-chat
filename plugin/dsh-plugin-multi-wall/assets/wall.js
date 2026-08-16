@@ -108,6 +108,7 @@
       const head = document.createElement("div");
       head.className = "pane-head";
       head.title = "点击放大 / 还原";
+      head.addEventListener("click", () => toggleFocus(port));
 
       const dot = document.createElement("span");
       dot.className = "dot";
@@ -257,12 +258,7 @@
     grid.dataset.cols = state.columns;
   });
 
-  // Double-click a pane header toggles zoom.
-  grid.addEventListener("dblclick", (e) => {
-    const pane = e.target.closest(".pane");
-    if (pane) toggleFocus(Number(pane.dataset.port));
-  });
-
+  // Clicking a pane header toggles zoom (bound per-pane in render()).
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape") unfocus();
   });
