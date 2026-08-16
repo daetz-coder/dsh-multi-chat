@@ -165,6 +165,30 @@ function respondPlain(socket: Socket, status: string, text: string): void {
 }
 
 /**
+ * Send a 302 that mints a session cookie and drops the `token` query param.
+ * A `?token=` URL authenticates exactly one request, so on first arrival the
+ * gateway exchanges it for an HMAC-signed cookie and redirects to the same
+ * path without `token=` (keeps the secret out of the address bar / history).
+ */
+function respondSessionRedirect(socket: Socket, parsed: ParsedHead, cookie: string): void {
+  let location = parsed.target
+  try {
+    const url = new URL(parsed.target, 'http://gateway.local')
+    url.searchParams.delete('token')
+    location = url.pathname + url.search
+  } catch { /* keep raw target */ }
+  socket.write(
+    'HTTP/1.1 302 Found\r\n'
+    + `location: ${location}\r\n`
+    + `set-cookie: ${cookie}\r\n`
+    + 'content-length: 0\r\n'
+    + 'connection: close\r\n'
+    + 'cache-control: no-store\r\n\r\n',
+  )
+  socket.end()
+}
+
+/**
  * Rebuild the request head for the loopback target. Host and Origin point at
  * `127.0.0.1:<target-port>` so the DSH `/api` browser-trust fence sees a local
  * request. Non-upgrade requests get `connection: close` (fresh connection per
@@ -223,17 +247,24 @@ export function startGateway(options: GatewayOptions): Promise<GatewayHandle> {
     }
   }
 
-  const isAuthed = (parsed: ParsedHead): boolean => {
+  /**
+   * How a request authenticates. When the answer is `query` (only the
+   * `?token=` matched), the caller must also mint a session cookie — a query
+   * token authenticates exactly one request, so without a cookie the page's
+   * follow-up fetches would 401 and render blank.
+   */
+  type AuthKind = 'cookie' | 'bearer' | 'query' | 'none'
+
+  const authKind = (parsed: ParsedHead): AuthKind => {
     const cookie = parsed.map.cookie ?? ''
     const session = /(?:^|;\s*)dsh_gw_session=([^;]+)/.exec(cookie)
-    if (session !== null && verifySession(session[1] ?? '')) return true
+    if (session !== null && verifySession(session[1] ?? '')) return 'cookie'
     const bearer = parsed.map.authorization ?? ''
-    if (bearer.startsWith('Bearer ') && bearer.slice(7) === token) return true
+    if (bearer.startsWith('Bearer ') && bearer.slice(7) === token) return 'bearer'
     try {
-      return new URL(parsed.target, 'http://gateway.local').searchParams.get('token') === token
-    } catch {
-      return false
-    }
+      if (new URL(parsed.target, 'http://gateway.local').searchParams.get('token') === token) return 'query'
+    } catch { /* fall through */ }
+    return 'none'
   }
 
   // Rate limiting per source IP (login POST only).
@@ -343,8 +374,18 @@ export function startGateway(options: GatewayOptions): Promise<GatewayHandle> {
         return
       }
 
-      if (!isAuthed(parsed)) {
+      const kind = authKind(parsed)
+      if (kind === 'none') {
         respondLogin(socket, name, path === '/' ? '/' : path)
+        return
+      }
+      // A `?token=` query authenticates only this request; exchange it for a
+      // session cookie and redirect (token dropped) so the browser stays
+      // authorized across the page's follow-up fetches without carrying the
+      // secret in every URL.
+      if (kind === 'query') {
+        const cookie = `dsh_gw_session=${signSession(Date.now() + maxAgeHours * 3600_000)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAgeHours * 3600}`
+        respondSessionRedirect(socket, parsed, cookie)
         return
       }
 

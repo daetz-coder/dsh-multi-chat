@@ -119,6 +119,27 @@ cache-control: no-store\r
 	socket.end();
 }
 /**
+* Send a 302 that mints a session cookie and drops the `token` query param.
+* A `?token=` URL authenticates exactly one request, so on first arrival the
+* gateway exchanges it for an HMAC-signed cookie and redirects to the same
+* path without `token=` (keeps the secret out of the address bar / history).
+*/
+function respondSessionRedirect(socket, parsed, cookie) {
+	let location = parsed.target;
+	try {
+		const url = new URL(parsed.target, "http://gateway.local");
+		url.searchParams.delete("token");
+		location = url.pathname + url.search;
+	} catch {}
+	socket.write(`HTTP/1.1 302 Found\r
+location: ${location}\r\nset-cookie: ${cookie}\r\ncontent-length: 0\r
+connection: close\r
+cache-control: no-store\r
+\r
+`);
+	socket.end();
+}
+/**
 * Rebuild the request head for the loopback target. Host and Origin point at
 * `127.0.0.1:<target-port>` so the DSH `/api` browser-trust fence sees a local
 * request. Non-upgrade requests get `connection: close` (fresh connection per
@@ -158,17 +179,16 @@ function startGateway(options) {
 			return false;
 		}
 	};
-	const isAuthed = (parsed) => {
+	const authKind = (parsed) => {
 		const cookie = parsed.map.cookie ?? "";
 		const session = /(?:^|;\s*)dsh_gw_session=([^;]+)/.exec(cookie);
-		if (session !== null && verifySession(session[1] ?? "")) return true;
+		if (session !== null && verifySession(session[1] ?? "")) return "cookie";
 		const bearer = parsed.map.authorization ?? "";
-		if (bearer.startsWith("Bearer ") && bearer.slice(7) === token) return true;
+		if (bearer.startsWith("Bearer ") && bearer.slice(7) === token) return "bearer";
 		try {
-			return new URL(parsed.target, "http://gateway.local").searchParams.get("token") === token;
-		} catch {
-			return false;
-		}
+			if (new URL(parsed.target, "http://gateway.local").searchParams.get("token") === token) return "query";
+		} catch {}
+		return "none";
 	};
 	const attempts = /* @__PURE__ */ new Map();
 	const isBlocked = (ip) => {
@@ -262,8 +282,13 @@ connection: close\r
 				handleLogin(socket, parsed, buffer.subarray(parsed.headBytes));
 				return;
 			}
-			if (!isAuthed(parsed)) {
+			const kind = authKind(parsed);
+			if (kind === "none") {
 				respondLogin(socket, name, path === "/" ? "/" : path);
+				return;
+			}
+			if (kind === "query") {
+				respondSessionRedirect(socket, parsed, `dsh_gw_session=${signSession(Date.now() + maxAgeHours * 36e5)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAgeHours * 3600}`);
 				return;
 			}
 			const target = connect(targetPort, "127.0.0.1");
