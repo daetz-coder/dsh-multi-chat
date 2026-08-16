@@ -28,7 +28,12 @@
     "bin/",
     "scripts/",
     "patches/",
-    "plugin/"
+    "plugin/dsh-client-ui-multi-wall/package.json",
+    "plugin/dsh-client-ui-multi-wall/README.md",
+    "plugin/dsh-client-ui-multi-wall/lib/index.js",
+    "plugin/dsh-client-ui-multi-wall/lib/invariant.js",
+    "plugin/dsh-client-ui-multi-wall/lib/client.js",
+    "plugin/dsh-client-ui-multi-wall/lib/types/**/*.d.ts"
   ],
   "scripts": {
     "test": "cd harness-src && npx vitest run packages/client/ui-multi-wall"
