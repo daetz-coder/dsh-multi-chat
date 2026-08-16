@@ -23,10 +23,10 @@ import { createServer, get as httpGet } from "node:http";
 import { get as httpsGet } from "node:https";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const PUBLIC = join(ROOT, "public");
+const PUBLIC = join(ROOT, "wall", "public");
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -76,8 +76,7 @@ function parsePortList(s) {
 /** Probe one local port: is it a live DSH instance? */
 function probePort(port, timeoutMs = 600) {
   return new Promise((resolve) => {
-    const req = httpGet(`http://127.0.0.1:${port}/`, timeoutMs);
-    req
+    request(`http://127.0.0.1:${port}/`, timeoutMs)
       .then(({ status, body }) => {
         resolve({
           port,
@@ -89,7 +88,7 @@ function probePort(port, timeoutMs = 600) {
   });
 }
 
-function httpGet(url, timeoutMs) {
+function request(url, timeoutMs) {
   return new Promise((resolve, reject) => {
     const get = url.startsWith("https") ? httpsGet : httpGet;
     const req = get(url, (res) => {
@@ -204,7 +203,7 @@ export function createWallServer(config = {}) {
 }
 
 // Direct execution: node server.mjs ...
-if (import.meta.url === `file://${process.argv[1].replace(/\\/g, "/")}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const args = parseArgs(process.argv.slice(2));
   const { server, listen } = createWallServer(args);
   listen().then((port) => {
