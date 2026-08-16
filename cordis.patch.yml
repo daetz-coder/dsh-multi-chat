@@ -1,0 +1,7 @@
+# dsh-multi-chat 多窗口墙 bundle patch：启用「多窗口」视图环。
+# 宿主侧（默认导出 lib/index.js）通过 /multi/api/* 只读路由提供发现/探活/启停；
+# 浏览器侧（./client 导出，经 dsh.client 清单发现）注册侧边栏底部快捷入口，
+# 打开一张显示所有运行中 DSH 实例的全屏墙（一个端口一格）。仅增量插入，不改写既有行。
+- insert:
+    - id: ui-multi-wall
+      name: dsh-multi-chat

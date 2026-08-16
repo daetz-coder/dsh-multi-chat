@@ -1,9 +1,42 @@
 {
   "name": "dsh-multi-chat",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "DSH 多对话：在官方 DeepSeek Harness Web 界面里以多窗口网格并排运行、监控多个对话实例，一屏盯住所有 Agent 的实时进度；内置带口令认证的局域网网关，手机/平板也能看。npx dsh-multi-chat install|start|stop|gateway",
   "license": "MIT",
   "type": "module",
+  "main": "plugin/dsh-client-ui-multi-wall/lib/index.js",
+  "exports": {
+    ".": {
+      "types": "./plugin/dsh-client-ui-multi-wall/lib/types/index.d.ts",
+      "default": "./plugin/dsh-client-ui-multi-wall/lib/index.js"
+    },
+    "./client": {
+      "types": "./plugin/dsh-client-ui-multi-wall/lib/types/client/index.d.ts",
+      "default": "./plugin/dsh-client-ui-multi-wall/lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-primitives"
+      ]
+    },
+    "marketplace": {
+      "profiles": ["web"],
+      "requiresRestart": true,
+      "manualSteps": false,
+      "requiresBuildApproval": false
+    }
+  },
   "bin": {
     "dsh-multi-chat": "bin/dsh-multi-chat.mjs"
   },
@@ -32,6 +65,7 @@
     "scripts/",
     "patches/",
     "assets/",
+    "cordis.patch.yml",
     "plugin/dsh-client-ui-multi-wall/package.json",
     "plugin/dsh-client-ui-multi-wall/README.md",
     "plugin/dsh-client-ui-multi-wall/lib/index.js",
