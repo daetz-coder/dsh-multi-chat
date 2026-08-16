@@ -18,6 +18,9 @@ import { connect, createServer } from "node:net";
 * `127.0.0.1:<target-port>`, rewriting Host/Origin so the official `/api`
 * browser-trust fence treats it as a local request. WebSocket upgrades pass
 * through untouched because the socket is piped byte-for-byte after the head.
+* The HTML document response is buffered once so a `crypto.randomUUID`
+* polyfill can be injected for phones (insecure-origin HTTP); all other
+* responses stream through unchanged.
 *
 * Zero dependencies: node:net + node:crypto only.
 * @module @deepseek-ai/dsh-client-ui-multi-wall/gateway
@@ -140,6 +143,29 @@ cache-control: no-store\r
 	socket.end();
 }
 /**
+* `crypto.randomUUID` exists only in a *secure context* (HTTPS or localhost).
+* A phone reaching the instance via `http://<LAN-IP>:<gateway-port>` is an
+* insecure origin, so the official DSH client throws
+* `crypto.randomUUID is not a function` on its first RPC and renders blank.
+* This polyfill supplies the same RFC-4122 v4 form using
+* `crypto.getRandomValues`, which insecure origins still expose.
+*/
+const POLYFILL_SCRIPT = "<script>(function(){if(typeof crypto!==\"undefined\"&&typeof crypto.randomUUID===\"undefined\"&&typeof crypto.getRandomValues===\"function\"){crypto.randomUUID=function(){var b=crypto.getRandomValues(new Uint8Array(16));b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;var h=Array.prototype.map.call(b,function(x){return x.toString(16).padStart(2,\"0\")}).join(\"\");return h.slice(0,8)+\"-\"+h.slice(8,12)+\"-\"+h.slice(12,16)+\"-\"+h.slice(16,20)+\"-\"+h.slice(20);};}})();<\/script>";
+/**
+* Rewrite a buffered HTML response body to inject the `randomUUID` polyfill
+* into the top of `<head>` (before the DSH bootstrap script runs). Returns the
+* new body, or `null` when the polyfill is not needed (already present, or the
+* response carries no `<head>` to inject into).
+*/
+function injectPolyfill(body) {
+	const html = body.toString("utf8");
+	if (html.includes("randomUUID")) return null;
+	const headMatch = /<head[^>]*>/i.exec(html);
+	if (headMatch === null) return null;
+	const insertAt = headMatch.index + headMatch[0].length;
+	return Buffer.from(html.slice(0, insertAt) + POLYFILL_SCRIPT + html.slice(insertAt), "utf8");
+}
+/**
 * Rebuild the request head for the loopback target. Host and Origin point at
 * `127.0.0.1:<target-port>` so the DSH `/api` browser-trust fence sees a local
 * request. Non-upgrade requests get `connection: close` (fresh connection per
@@ -258,6 +284,110 @@ connection: close\r
 			socket.once("end", done);
 		}
 	};
+	/**
+	* Decode an HTTP/1.1 `transfer-encoding: chunked` body back to its raw
+	* bytes. Returns `null` on malformed framing (caller then relays verbatim).
+	*/
+	const decodeChunked = (raw) => {
+		const out = [];
+		let i = 0;
+		const text = raw.toString("latin1");
+		while (true) {
+			const crlf = text.indexOf("\r\n", i);
+			if (crlf === -1) return null;
+			const sizeHex = text.slice(i, crlf).trim();
+			const size = parseInt(sizeHex, 16);
+			if (!Number.isFinite(size) || size < 0) return null;
+			i = crlf + 2;
+			if (size === 0) return Buffer.concat(out);
+			if (i + size > raw.length) return null;
+			out.push(raw.subarray(i, i + size));
+			i += size + 2;
+		}
+	};
+	/**
+	* Relay the DSH target's response to the phone client. HTML document
+	* responses (the DSH shell) are buffered so the `randomUUID` polyfill can be
+	* injected before the bootstrap script runs; every other response
+	* (assets, API JSON, SSE streams, WebSocket upgrades) is piped byte-for-byte
+	* so streaming and framing stay untouched.
+	*/
+	const relayTarget = (socket, target) => {
+		let head = Buffer.alloc(0);
+		let bodyParts = null;
+		let relayed = false;
+		const pipeThrough = () => {
+			if (relayed) return;
+			relayed = true;
+			if (head.length > 0) socket.write(head);
+			if (bodyParts !== null && bodyParts.length > 0) {
+				socket.write(Buffer.concat(bodyParts));
+				bodyParts = null;
+			}
+			target.pipe(socket);
+		};
+		const finishInjection = (fullHead, fullBody) => {
+			const rewritten = injectPolyfill(fullBody);
+			if (rewritten === null) {
+				socket.write(fullHead);
+				socket.write(fullBody);
+				socket.end();
+				return;
+			}
+			const lines = fullHead.toString("latin1").split("\r\n");
+			const filtered = [];
+			for (const line of lines) {
+				const lower = line.toLowerCase();
+				if (lower.startsWith("transfer-encoding:")) continue;
+				if (lower.startsWith("content-length:")) continue;
+				if (lower.startsWith("connection:")) continue;
+				filtered.push(line);
+			}
+			while (filtered.length > 0 && filtered[filtered.length - 1] === "") filtered.pop();
+			filtered.push(`content-length: ${rewritten.length}`, "connection: close", "", "");
+			socket.write(Buffer.from(filtered.join("\r\n"), "latin1"));
+			socket.write(rewritten);
+			socket.end();
+		};
+		target.on("data", (chunk) => {
+			if (relayed) return;
+			if (head.indexOf("\r\n\r\n") === -1) {
+				head = head.length === 0 ? chunk : Buffer.concat([head, chunk]);
+				const newIdx = head.indexOf("\r\n\r\n");
+				if (newIdx === -1) {
+					if (head.length > 65536) pipeThrough();
+					return;
+				}
+				const headBuf = head.subarray(0, newIdx + 4);
+				const bodyStart = head.subarray(newIdx + 4);
+				const headText = headBuf.toString("latin1");
+				const status = /^HTTP\/\d\.\d (\d{3})/.exec(headText)?.[1] ?? "";
+				const contentType = /^content-type:\s*([^\r\n]+)/im.exec(headText)?.[1] ?? "";
+				const ce = /^content-encoding:\s*([^\r\n]+)/im.exec(headText)?.[1] ?? "";
+				const isHtml = status === "200" && /text\/html/i.test(contentType);
+				const compressed = ce !== "" && !/identity/i.test(ce);
+				if (!isHtml || compressed) {
+					pipeThrough();
+					return;
+				}
+				bodyParts = bodyStart.length > 0 ? [bodyStart] : [];
+				return;
+			}
+			if (bodyParts !== null) bodyParts.push(chunk);
+		});
+		target.once("end", () => {
+			if (relayed || bodyParts === null) {
+				if (!relayed) socket.end();
+				return;
+			}
+			const headBuf = head.subarray(0, head.indexOf("\r\n\r\n") + 4);
+			const headText = headBuf.toString("latin1");
+			const rawBody = Buffer.concat(bodyParts);
+			const te = /^transfer-encoding:\s*([^\r\n]+)/im.exec(headText)?.[1] ?? "";
+			finishInjection(headBuf, /chunked/i.test(te) ? decodeChunked(rawBody) ?? rawBody : rawBody);
+		});
+		target.once("error", () => socket.destroy());
+	};
 	const handleSocket = (socket) => {
 		let buffer = Buffer.alloc(0);
 		let headDone = false;
@@ -300,7 +430,7 @@ connection: close\r
 				if (rest.length > 0) target.write(rest);
 				proxying = true;
 				socket.pipe(target);
-				target.pipe(socket);
+				relayTarget(socket, target);
 			});
 			target.on("error", (error) => {
 				if (!connected) respondPlain(socket, "502", `cannot reach target 127.0.0.1:${targetPort}: ${error.message}`);
