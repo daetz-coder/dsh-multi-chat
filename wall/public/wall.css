@@ -1,0 +1,208 @@
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --panel-2: #1c2333;
+  --border: #2d333b;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --accent: #4f8cff;
+  --accent-dim: #2a4a8a;
+  --ok: #3fb950;
+  --warn: #d29922;
+  --bad: #f85149;
+  --header-h: 52px;
+  --status-h: 26px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 14px;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── toolbar ─────────────────────────────────────────── */
+.toolbar {
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.brand { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
+.brand .logo { color: var(--accent); font-size: 18px; }
+.brand h1 { font-size: 15px; margin: 0; font-weight: 600; }
+.brand .sub { color: var(--text-dim); font-size: 11px; }
+
+.controls { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+
+.group { display: flex; align-items: center; gap: 6px; }
+.group label { color: var(--text-dim); font-size: 12px; white-space: nowrap; }
+.group .sep { color: var(--text-dim); }
+
+input[type="number"], select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  width: 78px;
+}
+input[type="number"]:focus, select:focus { outline: 1px solid var(--accent); }
+#add-port { width: 110px; }
+
+.btn {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent-dim); border-color: var(--accent); }
+
+/* ── grid of panes ───────────────────────────────────── */
+main.grid {
+  flex: 1;
+  overflow: auto;
+  padding: 8px;
+  display: grid;
+  gap: 8px;
+  grid-auto-rows: minmax(280px, 1fr);
+  align-content: start;
+}
+main.grid[data-cols="auto"] { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); }
+main.grid[data-cols="1"] { grid-template-columns: 1fr; }
+main.grid[data-cols="2"] { grid-template-columns: repeat(2, 1fr); }
+main.grid[data-cols="3"] { grid-template-columns: repeat(3, 1fr); }
+main.grid[data-cols="4"] { grid-template-columns: repeat(4, 1fr); }
+main.grid[data-cols="6"] { grid-template-columns: repeat(6, 1fr); }
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+  transition: border-color 120ms;
+}
+.pane:hover { border-color: var(--accent-dim); }
+.pane.focused { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+
+.pane-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+.pane-head .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
+.pane-head .dot.ok { background: var(--ok); }
+.pane-head .dot.bad { background: var(--bad); }
+.pane-head .dot.scan { background: var(--warn); }
+
+.pane-title {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pane-title small { color: var(--text-dim); font-weight: 400; margin-left: 6px; }
+
+.pane-actions { margin-left: auto; display: flex; gap: 2px; flex-shrink: 0; }
+.pane-actions button {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.pane-actions button:hover { background: var(--bg); color: var(--text); }
+.pane-actions button.danger:hover { color: var(--bad); }
+
+.pane-body {
+  flex: 1;
+  position: relative;
+  background: #fff;
+  min-height: 0;
+}
+.pane-body iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+.pane .loading-cover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text-dim);
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── focused (zoomed) pane ───────────────────────────── */
+body.zoomed main.grid {
+  grid-template-columns: 1fr !important;
+  grid-auto-rows: 1fr !important;
+  padding: 0;
+  gap: 0;
+}
+body.zoomed .pane:not(.focused) { display: none; }
+body.zoomed .pane.focused { border-radius: 0; border: none; }
+
+/* ── empty state & statusbar ─────────────────────────── */
+.empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-dim); gap: 6px; }
+.empty .hint { font-size: 12px; }
+.empty code { background: var(--panel-2); padding: 1px 6px; border-radius: 4px; }
+.hidden { display: none !important; }
+
+.statusbar {
+  height: var(--status-h);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.statusbar .spacer { flex: 1; }
+.statusbar .hint { white-space: nowrap; }

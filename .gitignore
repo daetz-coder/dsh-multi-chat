@@ -1,0 +1,15 @@
+# Node
+node_modules/
+*.log
+
+# Runtime state
+.wall-pids.json
+run/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
