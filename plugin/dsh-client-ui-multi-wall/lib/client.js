@@ -160,26 +160,26 @@ window.__ModuleLoader__.load({
 		}
 		var WallOverlay_module_css_default = {
 			"pane": "Muvhga_pane",
-			"bad": "Muvhga_bad",
+			"paneBody": "Muvhga_paneBody",
+			"empty": "Muvhga_empty",
+			"paneHead": "Muvhga_paneHead",
 			"grid": "Muvhga_grid",
+			"toolbar": "Muvhga_toolbar",
+			"wall": "Muvhga_wall",
+			"danger": "Muvhga_danger",
+			"dot": "Muvhga_dot",
+			"btn": "Muvhga_btn",
+			"action": "Muvhga_action",
+			"controls": "Muvhga_controls",
+			"ok": "Muvhga_ok",
+			"title": "Muvhga_title",
+			"hint": "Muvhga_hint",
+			"status": "Muvhga_status",
 			"field": "Muvhga_field",
 			"zoomed": "Muvhga_zoomed",
-			"ok": "Muvhga_ok",
-			"btn": "Muvhga_btn",
-			"paneBody": "Muvhga_paneBody",
-			"title": "Muvhga_title",
-			"status": "Muvhga_status",
-			"dot": "Muvhga_dot",
 			"paneActions": "Muvhga_paneActions",
 			"paneTitle": "Muvhga_paneTitle",
-			"toolbar": "Muvhga_toolbar",
-			"action": "Muvhga_action",
-			"paneHead": "Muvhga_paneHead",
-			"wall": "Muvhga_wall",
-			"empty": "Muvhga_empty",
-			"hint": "Muvhga_hint",
-			"controls": "Muvhga_controls",
-			"danger": "Muvhga_danger"
+			"bad": "Muvhga_bad"
 		};
 		//#endregion
 		//#region src/client/WallOverlay.tsx
@@ -266,8 +266,7 @@ window.__ModuleLoader__.load({
 					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("iframe", {
 						title: `DSH :${port}`,
 						src: `http://127.0.0.1:${port}/`,
-						loading: "lazy",
-						sandbox: "allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
+						loading: "lazy"
 					})
 				})]
 			});
@@ -434,8 +433,8 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WallToggle_module_css_default = {
-			"label": "bmjS6q_label",
-			"row": "bmjS6q_row"
+			"row": "bmjS6q_row",
+			"label": "bmjS6q_label"
 		};
 		//#endregion
 		//#region src/client/WallToggle.tsx

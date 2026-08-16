@@ -86,11 +86,14 @@ try {
   check("official shell mounted (shell.overlay layer present)", !!shellState.hasRoot, `hasRoot=${!!shellState.hasRoot}`);
   check("sidebar footer wall toggle rendered", shellState.toggleCount >= 1, `toggleCount=${shellState.toggleCount}`);
 
-  // 2. click the toggle
+  // 2. ensure the wall is OPEN (toggle only when closed — persisted state may
+  // already be open from a previous run)
   await evalJs(`(() => {
-    const btn = [...document.querySelectorAll('button')].find(b => b.getAttribute('aria-label') === '打开或关闭多窗口墙' || (b.textContent||'').includes('多窗口墙'));
-    if (btn) btn.click();
-    return !!btn;
+    if (!document.querySelector('[aria-label="多窗口墙"]')) {
+      const btn = [...document.querySelectorAll('button')].find(b => b.getAttribute('aria-label') === '打开或关闭多窗口墙' || (b.textContent||'').includes('多窗口墙'));
+      if (btn) btn.click();
+    }
+    return true;
   })()`);
 
   // 3. wait for the wall overlay to render panes
