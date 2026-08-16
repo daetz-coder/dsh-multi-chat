@@ -156,8 +156,10 @@ export function createWallServer(config = {}) {
 
     if (pathname === "/api/ports") {
       // Query params override the server defaults; fixed ports still win when set.
-      const qFrom = Number(url.searchParams.get("from"));
-      const qTo = Number(url.searchParams.get("to"));
+      const qFromRaw = url.searchParams.get("from");
+      const qToRaw = url.searchParams.get("to");
+      const qFrom = qFromRaw !== null ? Number(qFromRaw) : NaN;
+      const qTo = qToRaw !== null ? Number(qToRaw) : NaN;
       const lo = fixedPorts ? null : Number.isInteger(qFrom) ? qFrom : range.from;
       const hi = fixedPorts ? null : Number.isInteger(qTo) ? qTo : range.to;
       const ports = fixedPorts ?? [];
