@@ -9,6 +9,12 @@
   <a href="https://github.com/topics/dsh-plugin"><img src="https://img.shields.io/badge/dsh--plugin-community-brightgreen" alt="dsh-plugin"></a>
 </p>
 
+<p align="center">
+  <a href="https://awesome-dsh-plugin.com/p/daetz-coder/dsh-multi-chat/"><img src="https://awesome-dsh-plugin.com/badge.svg" alt="awesome-dsh-plugin"></a>
+  <a href="https://dshfind.com/plugins/daetz-coder/dsh-multi-chat"><img src="https://dshfind.com/api/badge/daetz-coder/dsh-multi-chat" alt="dshfind"></a>
+  <a href="https://github.com/awesome-dsh-plugin/awesome-dsh-plugin"><img src="https://img.shields.io/badge/listed%20on-awesome--dsh--plugin-4d6bfe" alt="listed on awesome-dsh-plugin"></a>
+</p>
+
 > **在 DeepSeek Harness 里同时开 N 个对话，并排盯住每一个 Agent 的实时进度，还能用手机/平板躺着看。** 一个浏览器，从「一次一个对话」升级成「全景多对话驾驶舱」。
 
 给 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) 官方 Web 界面装上一面**多窗口墙**：在一张网格里同时显示 N 个正在运行的 DSH 对话实例（每个实例独立跑一个任务），所有 Agent 的实时进度、对话、输出**一眼尽收**，不用在无数标签页/窗口之间切来切去。

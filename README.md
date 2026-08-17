@@ -9,6 +9,12 @@
   <a href="https://github.com/topics/dsh-plugin"><img src="https://img.shields.io/badge/dsh--plugin-community-brightgreen" alt="dsh-plugin"></a>
 </p>
 
+<p align="center">
+  <a href="https://awesome-dsh-plugin.com/p/daetz-coder/dsh-multi-chat/"><img src="https://awesome-dsh-plugin.com/badge.svg" alt="awesome-dsh-plugin"></a>
+  <a href="https://dshfind.com/plugins/daetz-coder/dsh-multi-chat"><img src="https://dshfind.com/api/badge/daetz-coder/dsh-multi-chat" alt="dshfind"></a>
+  <a href="https://github.com/awesome-dsh-plugin/awesome-dsh-plugin"><img src="https://img.shields.io/badge/listed%20on-awesome--dsh--plugin-4d6bfe" alt="listed on awesome-dsh-plugin"></a>
+</p>
+
 > **Run N conversations in DeepSeek Harness at once, watch every Agent's live progress side-by-side, and check in from your phone or tablet.** One browser tab goes from "one conversation at a time" to "a panoramic multi-conversation cockpit."
 
 Install a **multi-window wall** into the official [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) Web UI: a grid that shows N running DSH conversation instances simultaneously (each instance runs its own task), so every Agent's live progress, chat, and output are **visible at a glance** — no more hopping between endless tabs and windows.
