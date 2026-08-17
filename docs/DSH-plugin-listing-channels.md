@@ -103,6 +103,7 @@
 | d. fendouai/awesome-deepseek-harness | PR 改 `data/`（YAML：name/repository/type/category/description/capabilities/status/license）或开 `.github/ISSUE_TEMPLATE/submit-project.yml` issue；最简单加 topic + PR 到 data/ | 可选（P2） | 未收录（已核实） |
 | e. dsh.pub（dsh-pub/dsh-pub） | ① 网页表单 https://dsh.pub/submit（无需 fork，Turnstile→Worker→GitHub App 自动开 submission PR→CI 校验→自动合并→listed 徽章）；② 每日 01:00(Asia/Shanghai) topic 同步自动钉 commit | 可选（P2） | topic 命中日同步；checkout 快照中未见 |
 | f. 纯 topic 自动类：AwesomeHou/dsh-plugin-marketplace、YELEBAI/dsh-plugin-marketplace、NoWint/Oh-My-DSH、w2112515/dsh-plugin-marketplace、bradeGithub/DSH-Plugins-Marketplace | 全部基于 `dsh-plugin` topic 自动扫描/同步，无手动提交 | ❌ | 均已命中：YELEBAI 已收录（guided 模式，security-scan pending 转直装）；AwesomeHou 自动可见；其余由 topic 覆盖，无需动作 |
+| g. **deepseek-harness-plugin.com**（独立社区目录） | **网页表单** `POST https://deepseek-harness-plugin.com/api/submit`（JSON：`type=plugin, repo=owner/repo, name, category, description, contact, website(honeypot 蜜罐留空)`）；**人工审核**（usually within a few days，页面原话）；Astro 静态站，非目录仓库而是独立站点，footer 只链官方 upstream | ✅（已提交） | **2026-08-17 已成功提交**，接收 ID `submissions:2026-08-17:1786939764449`，category=ui；等待人工审核收录（页面上 82 个 UI 增强插件），收录后自动展示 |
 
 ---
 
