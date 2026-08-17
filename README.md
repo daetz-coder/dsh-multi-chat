@@ -56,7 +56,7 @@ npx dsh-multi-chat start --ports 3080,3081,3082
 - **No official logic is touched**: the plugin only registers two **additive list slots** (`conversation.view` ring entry, `sidebar.footer.action` sidebar shortcut) and five read-only JSON routes (`/multi/api/ports`, `/multi/api/status`, `/multi/api/stop`, `/multi/api/create`, `/multi/api/link`). No existing slot is replaced, no line is rewritten, and no core session/agent/tool logic is touched.
 - **The UI is the official UI**: the wall is a view in the official view ring rendered inside the chat panel (not a popup). Theme, type scale, icons, and controls all use the official `--dsw-*` tokens and official primitives (Button/Input/Menu/StateDot).
 - **Recursion guard**: the wall never embeds its own port; embedded pages carry a `?multi-wall=embed` flag and register no wall UI, preventing infinite "wall-in-wall" recursion.
-- **Minimal footprint**: one client plugin package + one patch line.
+- **Minimal footprint**: one declarative client plugin package — it ships its own `dsh.bundle.patch` + `cordis.patch.yml`, so DSH mounts it as a bundle layer automatically.
 
 ## Directory layout
 
@@ -64,9 +64,9 @@ npx dsh-multi-chat start --ports 3080,3081,3082
 plugin/dsh-client-ui-multi-wall/   # spec-compliant client plugin package (node half + browser half)
   lib/                             # built artifacts (lib/index.js + lib/client.js + types)
   src/                             # source (mirrors the official monorepo packages/client/ui-multi-wall)
-patches/multi-wall.yml             # cordis.patch.yml insert line that enables the plugin
+patches/multi-wall.yml             # optional `--patch` overlay (usually not needed; the plugin auto-mounts via dsh.bundle)
 scripts/
-  install-plugin.ps1               # pack + install into profile + append patch + prompt restart
+  install-plugin.ps1               # pack + install into profile (DSH auto-mounts the bundle) + prompt restart
   start-multi.ps1 / stop-multi.ps1 # start/stop multiple dsh web instances (-Remote can carry an authenticated gateway)
   gateway.mjs                      # token-authenticated / optional-TLS reverse-proxy gateway (phone/remote access)
   gateway-hidden.vbs               # no-window launcher: starts gateway.mjs hidden (no console flash)
@@ -78,7 +78,8 @@ harness-src/                       # official deepseek-harness source (dev/build
 ## Install & enable (Windows)
 
 ```powershell
-# 1) Pack and install into the web profile, appends the patch line automatically
+# 1) Pack and install into the web profile. The plugin declares dsh.bundle.patch,
+#    so DSH auto-mounts its bundle layer — no manual patch edit.
 .\scripts\install-plugin.ps1
 
 # 2) Restart dsh web and open any instance
@@ -90,8 +91,13 @@ Or manual:
 
 ```bash
 cd plugin/dsh-client-ui-multi-wall && npm pack          # produce a tarball
-dsh plugin --profile web add <tarball>                  # install into the profile
-# Append the insert line from patches/multi-wall.yml to ~/.dsh/profiles/web/cordis.patch.yml
+dsh plugin --profile web add <tarball>                  # DSH adds the package to the bundle layer stack automatically
+```
+
+Uninstall (one command, nothing manual to clean up):
+
+```bash
+dsh plugin --profile web remove @deepseek-ai/dsh-client-ui-multi-wall
 ```
 
 ## Usage

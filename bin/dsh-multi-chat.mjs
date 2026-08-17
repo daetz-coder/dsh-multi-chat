@@ -123,10 +123,11 @@ const INSTALL_HELP = `dsh-multi-chat install — install the multi-window wall p
 Usage:
   dsh-multi-chat install [--profile web]
 
-Packs plugin/dsh-client-ui-multi-wall, installs the tarball into the profile
-with \`dsh plugin --profile <p> add\`, and appends the enable patch row to
-$DSH_HOME/profiles/<p>/cordis.patch.yml. Idempotent: the patch row is only
-added once. Restart dsh web afterwards.
+Packs plugin/dsh-client-ui-multi-wall and installs the tarball into the profile
+with \`dsh plugin --profile <p> add\`. The plugin declares \`dsh.bundle.patch\`
+(pointing at its own cordis.patch.yml), so DSH mounts it automatically as a
+bundle layer — no manual profile patch is needed. Restart dsh web afterwards.
+Uninstall with: dsh plugin --profile <p> remove @deepseek-ai/dsh-client-ui-multi-wall
 `
 
 async function cmdInstall(args) {
@@ -151,29 +152,12 @@ async function cmdInstall(args) {
   const tarball = join(stableDir, tarballName)
   if (!existsSync(tarball)) throw new Error('npm pack produced no tarball')
 
-  // 2) install into the profile.
+  // 2) install into the profile. DSH reconciles `dsh.profile.bundles` from the
+  // installed dependency set: because this package declares `dsh.bundle.patch`,
+  // `dsh plugin add` leaves it in the bundle layer stack and its own
+  // cordis.patch.yml is mounted automatically — no manual profile patch edits.
   process.stdout.write(`installing ${tarballName} into profile '${profile}'…\n`)
   run('dsh', ['plugin', '--profile', profile, 'add', tarball])
-
-  // 3) append the enable patch row (idempotent).
-  const patchPath = join(dshHome(), 'profiles', profile, 'cordis.patch.yml')
-  const insert = [
-    '',
-    '# Multi-window wall (dsh-multi-chat): enable the official client',
-    '# plugin that renders the wall inside the DSH web GUI.',
-    '- insert:',
-    '    - id: ui-multi-wall',
-    "      name: '@deepseek-ai/dsh-client-ui-multi-wall'",
-    '',
-  ].join('\n')
-  let content = ''
-  if (existsSync(patchPath)) content = readFileSync(patchPath, 'utf8')
-  if (!content.includes('ui-multi-wall')) {
-    writeFileSync(patchPath, content.trimEnd() + '\n' + insert, 'utf8')
-    process.stdout.write(`patched ${patchPath}\n`)
-  } else {
-    process.stdout.write(`profile patch already enables ui-multi-wall (${patchPath})\n`)
-  }
 
   process.stdout.write('\nDone. Restart dsh web to load the wall:\n')
   process.stdout.write('  dsh web --port <n>\n')

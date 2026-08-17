@@ -56,7 +56,7 @@ npx dsh-multi-chat start --ports 3080,3081,3082
 - **不改动任何官方逻辑**：插件只注册两个**增量列表槽位**（`conversation.view` 视图环条目、`sidebar.footer.action` 侧边栏快捷入口）和五个只读 JSON 路由（`/multi/api/ports`、`/multi/api/status`、`/multi/api/stop`、`/multi/api/create`、`/multi/api/link`）。不替换任何既有槽位、不改写任何行、不触碰会话/代理/工具等核心逻辑。
 - **界面就是官方界面**：墙是官方视图环的一个视图，渲染在对话主面板内（不是弹层），主题、字号、图标、控件全部走官方 `--dsw-*` token 与官方 primitives（Button/Input/Menu/StateDot）。
 - **递归防护**：墙永远不嵌入自身端口；被嵌入页面带 `?multi-wall=embed` 标记，不注册任何墙界面，杜绝「墙中墙」无限递归。
-- **最小改动**：新增一个 client 插件包 + 一个 patch 行。
+- **最小改动**：一个声明式 client 插件包 —— 包内自带 `dsh.bundle.patch` + `cordis.patch.yml`，DSH 启动时自动作为 bundle 层挂载，无需手改任何文件。
 
 ## 目录结构
 
@@ -64,9 +64,9 @@ npx dsh-multi-chat start --ports 3080,3081,3082
 plugin/dsh-client-ui-multi-wall/   # 官方规范 client 插件包（node half + browser half）
   lib/                             # 已构建产物（lib/index.js + lib/client.js + 类型）
   src/                             # 源码（与官方 monorepo packages/client/ui-multi-wall 一致）
-patches/multi-wall.yml             # 启用插件的 cordis.patch.yml insert 行
+patches/multi-wall.yml             # 可选 `--patch` overlay（通常不需要；插件经 dsh.bundle 自动挂载）
 scripts/
-  install-plugin.ps1               # 打包 + 装进 profile + 追加 patch + 提示重启
+  install-plugin.ps1               # 打包 + 装进 profile（DSH 自动挂载 bundle 层）+ 提示重启
   start-multi.ps1 / stop-multi.ps1 # 启停多个 dsh web 实例（-Remote 可带认证网关）
   gateway.mjs                      # 带令牌认证 / 可选 TLS 的反向代理网关（手机/远程访问）
   gateway-hidden.vbs               # 无窗口启动器：用隐藏窗口方式启动 gateway.mjs（不弹控制台）
@@ -78,7 +78,8 @@ harness-src/                       # 官方 deepseek-harness 源码（开发/构
 ## 安装与启用（Windows）
 
 ```powershell
-# 1) 打包并装进 web profile，自动追加 patch 行
+# 1) 打包并装进 web profile。插件声明了 dsh.bundle.patch，
+#    DSH 会自动挂载其 bundle 层 —— 无需手改 patch。
 .\scripts\install-plugin.ps1
 
 # 2) 重启 dsh web，打开任意实例
@@ -90,8 +91,13 @@ dsh web --port 3084
 
 ```bash
 cd plugin/dsh-client-ui-multi-wall && npm pack          # 得到 tarball
-dsh plugin --profile web add <tarball>                  # 装进 profile
-# 把 patches/multi-wall.yml 的 insert 行加进 ~/.dsh/profiles/web/cordis.patch.yml
+dsh plugin --profile web add <tarball>                  # DSH 自动把包加入 bundle 层栈
+```
+
+卸载（一条命令，无需手动清理任何文件）：
+
+```bash
+dsh plugin --profile web remove @deepseek-ai/dsh-client-ui-multi-wall
 ```
 
 ## 使用

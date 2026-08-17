@@ -1,4 +1,4 @@
-﻿#requires -Version 5.1
+#requires -Version 5.1
 <#
 .SYNOPSIS
   启动多个 DSH web 实例（多窗口墙直接内嵌在官方界面里，无需独立服务器）。
@@ -19,8 +19,9 @@
   默认 "3080,3081,3082,3083"。
 
 .PARAMETER Patch
-  启用多窗口墙的 patch 文件（默认 patches/multi-wall.yml）；若已把 insert
-  写进 profile 的 cordis.patch.yml，可传 $null 跳过。
+  备用启用方式：传给 `dsh web --patch` 的 patch 文件。插件现已声明
+  dsh.bundle.patch（bundle 层自动挂载），通常无需传此参数；仅当你希望
+  以 overlay 方式临时启用时才使用。
 
 .PARAMETER Remote
   为每个实例启动一个带令牌认证的网关（0.0.0.0），用于手机/远程访问。
