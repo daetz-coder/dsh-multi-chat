@@ -1,4 +1,6 @@
-# 💬 dsh-multi-chat —— 多对话，一屏驾驭
+# 💬 dsh-multi-chat — Multi-chat, one screen
+
+**English** | [中文](README.zh.md)
 
 <p align="center">
   <a href="https://www.npmjs.com/package/dsh-multi-chat"><img src="https://img.shields.io/npm/v/dsh-multi-chat" alt="npm version"></a>
@@ -7,181 +9,181 @@
   <a href="https://github.com/topics/dsh-plugin"><img src="https://img.shields.io/badge/dsh--plugin-community-brightgreen" alt="dsh-plugin"></a>
 </p>
 
-> **在 DeepSeek Harness 里同时开 N 个对话，并排盯住每一个 Agent 的实时进度，还能用手机/平板躺着看。** 一个浏览器，从「一次一个对话」升级成「全景多对话驾驶舱」。
+> **Run N conversations in DeepSeek Harness at once, watch every Agent's live progress side-by-side, and check in from your phone or tablet.** One browser tab goes from "one conversation at a time" to "a panoramic multi-conversation cockpit."
 
-给 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) 官方 Web 界面装上一面**多窗口墙**：在一张网格里同时显示 N 个正在运行的 DSH 对话实例（每个实例独立跑一个任务），所有 Agent 的实时进度、对话、输出**一眼尽收**，不用在无数标签页/窗口之间切来切去。
+Install a **multi-window wall** into the official [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) Web UI: a grid that shows N running DSH conversation instances simultaneously (each instance runs its own task), so every Agent's live progress, chat, and output are **visible at a glance** — no more hopping between endless tabs and windows.
 
-## ✨ 它能做什么
+## ✨ What it does
 
-| 能力 | 说明 |
-|------|------|
-| 📺 **多窗口** | 侧边栏一键进入，右侧对话区原位变成窗口网格，一个端口一格，并排看全部任务 |
-| 🔍 **自动发现** | 扫描端口区间自动发现正在运行的 DSH 实例，也可手动管理 |
-| ➕ **一键新建窗口** | 墙内直接启动全新 DSH 实例，凑成你的多对话矩阵 |
-| 📱 **手机访问** | 点「手机访问」自动起一个**内置带口令认证的局域网网关**，手机打开 URL、输入口令即可看进度 |
-| 🛑 **窗口控制** | 单窗口放大、刷新、新标签页打开、关闭实例、列数切换（自动/1/2/3/4/6）|
+| Capability | Description |
+|------------|-------------|
+| 📺 **Multi-window** | One-click entry from the sidebar; the chat area becomes a window grid showing every task side-by-side, one pane per port |
+| 🔍 **Auto-discovery** | Scans a port range to auto-find running DSH instances; manual management is also supported |
+| ➕ **One-click new window** | Launch a brand-new DSH instance right inside the wall to grow your conversation matrix |
+| 📱 **Phone access** | The "Phone access" button starts a **built-in authenticated LAN gateway** — open the URL on your phone, enter the token, and watch progress |
+| 🛑 **Window controls** | Maximize, refresh, open in a new tab, stop an instance, and switch column count (auto/1/2/3/4/6) |
 
-> **多对话 = 多端口。** 启动 N 个 `dsh web --port <n>`，每个实例独立跑一个对话/任务；在任意一个实例里打开多窗口墙，即可并排看到全部。
+> **Multi-chat = multi-port.** Start N `dsh web --port <n>` instances (each running one conversation/task), open the wall from any of them, and you see all of them side-by-side.
 
-## 📸 运行效果
+## 📸 Screenshots
 
-**🖥️ Windows · 双对话并排** —— 两个正在运行的 DSH 实例并排列出，每格都是完整的官方对话界面，带实时在线状态点与单窗控制（放大 / 刷新 / 新标签页 / 移除）：
+**🖥️ Windows · Two chats side-by-side** — two running DSH instances laid out together, each pane a full official conversation UI with live online status dots and per-window controls (maximize / refresh / new tab / remove):
 
-![Windows 双对话：两个 DSH 实例并排显示](assets/01-windows-dual-chat.png)
+![Windows dual chat: two DSH instances side-by-side](assets/01-windows-dual-chat.png)
 
-**📱 iPad · 双对话移动端** —— 同一局域网内，iPad 打开带口令认证的网关地址，即可在平板上一屏并排盯住两个 Agent 的实时进度：
+**📱 iPad · Two chats on mobile** — on the same LAN, open the token-authenticated gateway URL on an iPad to watch two Agents' live progress on one tablet screen:
 
-![iPad 双对话：平板端并排显示两个 DSH 实例](assets/02-ipad-dual-chat.png)
+![iPad dual chat: two DSH instances on tablet](assets/02-ipad-dual-chat.png)
 
-**🖥️ Windows · 三对话全景** —— 3 列网格并排显示 3 个正在运行的实例，一屏尽收全部 Agent，把「一次一个对话」升级成「全景多对话驾驶舱」：
+**🖥️ Windows · Three-chat panorama** — a 3-column grid of three running instances, all Agents on one screen, upgrading you from "one conversation at a time" to "a panoramic multi-conversation cockpit":
 
-![Windows 三对话：3 列网格并排显示 3 个 DSH 实例](assets/03-windows-triple-chat.png)
+![Windows triple chat: 3-column grid of three DSH instances](assets/03-windows-triple-chat.png)
 
-## 🚀 30 秒上手
+## 🚀 30-second quick start
 
 ```bash
-# 1. 安装（npm / npx，免手工打包补丁）
+# 1. Install (npm / npx, no manual patch needed)
 npx dsh-multi-chat install
 
-# 2. 启动几个实例
+# 2. Start a few instances
 npx dsh-multi-chat start --ports 3080,3081,3082
 
-# 3. 打开任意实例，点侧边栏底部「多窗口」→ 完成 🎉
+# 3. Open any instance and click "Multi-window" in the sidebar footer → done 🎉
 ```
 
-## 为什么这样做
+## Why this approach
 
-- **不改动任何官方逻辑**：插件只注册两个**增量列表槽位**（`conversation.view` 视图环条目、`sidebar.footer.action` 侧边栏快捷入口）和五个只读 JSON 路由（`/multi/api/ports`、`/multi/api/status`、`/multi/api/stop`、`/multi/api/create`、`/multi/api/link`）。不替换任何既有槽位、不改写任何行、不触碰会话/代理/工具等核心逻辑。
-- **界面就是官方界面**：墙是官方视图环的一个视图，渲染在对话主面板内（不是弹层），主题、字号、图标、控件全部走官方 `--dsw-*` token 与官方 primitives（Button/Input/Menu/StateDot）。
-- **递归防护**：墙永远不嵌入自身端口；被嵌入页面带 `?multi-wall=embed` 标记，不注册任何墙界面，杜绝「墙中墙」无限递归。
-- **最小改动**：新增一个 client 插件包 + 一个 patch 行。
+- **No official logic is touched**: the plugin only registers two **additive list slots** (`conversation.view` ring entry, `sidebar.footer.action` sidebar shortcut) and five read-only JSON routes (`/multi/api/ports`, `/multi/api/status`, `/multi/api/stop`, `/multi/api/create`, `/multi/api/link`). No existing slot is replaced, no line is rewritten, and no core session/agent/tool logic is touched.
+- **The UI is the official UI**: the wall is a view in the official view ring rendered inside the chat panel (not a popup). Theme, type scale, icons, and controls all use the official `--dsw-*` tokens and official primitives (Button/Input/Menu/StateDot).
+- **Recursion guard**: the wall never embeds its own port; embedded pages carry a `?multi-wall=embed` flag and register no wall UI, preventing infinite "wall-in-wall" recursion.
+- **Minimal footprint**: one client plugin package + one patch line.
 
-## 目录结构
+## Directory layout
 
 ```
-plugin/dsh-client-ui-multi-wall/   # 官方规范 client 插件包（node half + browser half）
-  lib/                             # 已构建产物（lib/index.js + lib/client.js + 类型）
-  src/                             # 源码（与官方 monorepo packages/client/ui-multi-wall 一致）
-patches/multi-wall.yml             # 启用插件的 cordis.patch.yml insert 行
+plugin/dsh-client-ui-multi-wall/   # spec-compliant client plugin package (node half + browser half)
+  lib/                             # built artifacts (lib/index.js + lib/client.js + types)
+  src/                             # source (mirrors the official monorepo packages/client/ui-multi-wall)
+patches/multi-wall.yml             # cordis.patch.yml insert line that enables the plugin
 scripts/
-  install-plugin.ps1               # 打包 + 装进 profile + 追加 patch + 提示重启
-  start-multi.ps1 / stop-multi.ps1 # 启停多个 dsh web 实例（-Remote 可带认证网关）
-  gateway.mjs                      # 带令牌认证 / 可选 TLS 的反向代理网关（手机/远程访问）
-  gateway-hidden.vbs               # 无窗口启动器：用隐藏窗口方式启动 gateway.mjs（不弹控制台）
-  gateway-start.ps1 / gateway-stop.ps1  # 一键静默启动/停止网关
-bin/dsh-multi-chat.mjs             # 跨平台 npx CLI（install/start/stop/gateway）
-harness-src/                       # 官方 deepseek-harness 源码（开发/构建用）
+  install-plugin.ps1               # pack + install into profile + append patch + prompt restart
+  start-multi.ps1 / stop-multi.ps1 # start/stop multiple dsh web instances (-Remote can carry an authenticated gateway)
+  gateway.mjs                      # token-authenticated / optional-TLS reverse-proxy gateway (phone/remote access)
+  gateway-hidden.vbs               # no-window launcher: starts gateway.mjs hidden (no console flash)
+  gateway-start.ps1 / gateway-stop.ps1  # one-shot silent start/stop of the gateway
+bin/dsh-multi-chat.mjs             # cross-platform npx CLI (install/start/stop/gateway)
+harness-src/                       # official deepseek-harness source (dev/build reference)
 ```
 
-## 安装与启用（Windows）
+## Install & enable (Windows)
 
 ```powershell
-# 1) 打包并装进 web profile，自动追加 patch 行
+# 1) Pack and install into the web profile, appends the patch line automatically
 .\scripts\install-plugin.ps1
 
-# 2) 重启 dsh web，打开任意实例
+# 2) Restart dsh web and open any instance
 dsh web --port 3084
-# 浏览器打开 http://127.0.0.1:3084 ，侧边栏底部出现「多窗口」按钮
+# Browser: http://127.0.0.1:3084 — a "Multi-window" button appears in the sidebar footer
 ```
 
-或手动：
+Or manual:
 
 ```bash
-cd plugin/dsh-client-ui-multi-wall && npm pack          # 得到 tarball
-dsh plugin --profile web add <tarball>                  # 装进 profile
-# 把 patches/multi-wall.yml 的 insert 行加进 ~/.dsh/profiles/web/cordis.patch.yml
+cd plugin/dsh-client-ui-multi-wall && npm pack          # produce a tarball
+dsh plugin --profile web add <tarball>                  # install into the profile
+# Append the insert line from patches/multi-wall.yml to ~/.dsh/profiles/web/cordis.patch.yml
 ```
 
-## 使用
+## Usage
 
-1. 先启动若干实例：`.\scripts\start-multi.ps1 -Ports "3080,3081,3082,3084"`（或手动 `dsh web --port <n>`）。
-2. 打开任意实例，点侧边栏底部的「多窗口」快捷入口（或点对话区头部的「多窗口」标签页）。
-3. 墙视图内：自动发现实例（自动排除自身端口）、列数切换（自动/1/2/3/4/6，默认横向铺满）、点标题放大、⟳ 单独刷新、↗ 新标签页打开、✕ 从视图移除、全部刷新、实时在线状态点。布局保存在 localStorage。
-4. 退出墙：点工具栏**右上角的「退出」按钮**，一键切回对话视图。
+1. Start several instances: `.\scripts\start-multi.ps1 -Ports "3080,3081,3082,3084"` (or manual `dsh web --port <n>`).
+2. Open any instance and click the "Multi-window" shortcut in the sidebar footer (or the "Multi-window" tab at the top of the chat area).
+3. Inside the wall view: auto-discovery (own port excluded), column switching (auto/1/2/3/4/6, horizontally filled by default), click title to maximize, ⟳ refresh one, ↗ open in a new tab, ✕ remove from view, refresh all, and live online status dots. The layout is persisted to `localStorage`.
+4. To exit the wall, click the **"Exit" button in the toolbar's top-right** to switch back to the chat view in one click.
 
-## 手机 / 远程访问（内置认证网关）
+## Phone / remote access (built-in authenticated gateway)
 
-官方 `dsh web` 出于安全**刻意禁止 `--host 0.0.0.0`**（会向网络暴露远程代码执行）。本插件内置了一个**带令牌认证的内联网关**：点工具栏「手机访问」按钮，它会**自动**为本实例启动一个网关（监听 `0.0.0.0`，反向代理到 `127.0.0.1:<本实例端口>`），并返回局域网 URL + 登录口令。
+The official `dsh web` **deliberately forbids `--host 0.0.0.0`** (it would expose remote code execution to the network). This plugin ships a built-in **token-authenticated intranet gateway**: click the "Phone access" button and it **automatically** starts a gateway for the current instance (listening on `0.0.0.0`, reverse-proxying to `127.0.0.1:<this instance's port>`), returning a LAN URL + login token.
 
 ```text
-点击「手机访问」→ 得到：
-  手机在同一网络时可用：http://10.105.7.204:9477  口令：2efb23eade16
+Click "Phone access" → you get:
+  Available on your phone on the same network: http://10.105.7.204:9477  token: 2efb23eade16
 ```
 
-手机打开该 URL、输入口令即可进入完整 DSH 界面。网关的安全模型：
+Open that URL on your phone and enter the token to reach the full DSH UI. The gateway's security model:
 
-- HMAC 签名的 HttpOnly/SameSite 会话 Cookie（默认 12h），`?token=` 供脚本快捷使用，按 IP 限流登录失败
-- 所有代理请求把 Host/Origin 重写为回环目标，官方 `/api` 浏览器信任栅栏（DNS-rebinding 防线）判定为本地请求，无需重启加 `--trusted-host`
-- WebSocket 升级与 SSE 流原样透传
-- 目标端口撞上 Windows 排除段或已占用时，自动回退到 OS 分配的空闲端口
+- HMAC-signed HttpOnly/SameSite session cookie (12h default), `?token=` for script convenience, per-IP rate limiting on failed logins
+- All proxied requests rewrite Host/Origin to the loopback target, so the official `/api` browser-trust fence (the DNS-rebinding defense) treats it as a local request — no restart / `--trusted-host` needed
+- WebSocket upgrades and SSE streams pass through unchanged
+- When the intended port hits a Windows excluded range or is already bound, it automatically falls back to an OS-assigned free port
 
-> 也有独立的 `scripts/gateway.mjs`（带可选 TLS）供进阶场景手动使用。
+> A standalone `scripts/gateway.mjs` (with optional TLS) is also available for advanced manual use.
 
-## 分发与安装
+## Distribution & install
 
-仓库内置跨平台 CLI `dsh-multi-chat`（`bin/dsh-multi-chat.mjs`），下面三种渠道都可安装。CLI 的 `install` 会探测 `$DSH_HOME`（缺省 `~/.dsh`）并幂等地追加启用 patch（与 `install-plugin.ps1` 行为一致）。
+The repo bundles a cross-platform CLI, `dsh-multi-chat` (`bin/dsh-multi-chat.mjs`), installable through any of the three channels below. Its `install` command probes `$DSH_HOME` (default `~/.dsh`) and idempotently appends the enable patch (same behavior as `install-plugin.ps1`).
 
-### 渠道一：npm / npx（推荐，最省事）
+### Channel 1: npm / npx (recommended, easiest)
 
 ```bash
-# 发布到 npm 后，任意机器一句话安装
+# After publishing to npm, one line installs on any machine
 npx dsh-multi-chat install
 
-# 或直接 npx 跑单条命令（无需安装）
-npx dsh-multi-chat start --remote --token <口令> --ports 3080,3081
-npx dsh-multi-chat gateway --target 127.0.0.1:3080 --token <口令>
+# Or run a single command straight from npx (no install needed)
+npx dsh-multi-chat start --remote --token <token> --ports 3080,3081
+npx dsh-multi-chat gateway --target 127.0.0.1:3080 --token <token>
 ```
 
-维护者发布：`npm publish`（无作用域公开包 `dsh-multi-chat`）。
+Publishing (maintainer): `npm publish` (unscoped public package `dsh-multi-chat`).
 
-### 渠道二：GitHub Release
+### Channel 2: GitHub Release
 
-从 [Releases](https://github.com/daetz-coder/dsh-multi-chat/releases) 下载源码 zip/tarball，解压后进目录：
+Download the source zip/tarball from [Releases](https://github.com/daetz-coder/dsh-multi-chat/releases), unpack it, and cd in:
 
 ```bash
-node bin/dsh-multi-chat.mjs install           # 打包 + dsh plugin add + 追加启用 patch
+node bin/dsh-multi-chat.mjs install           # pack + dsh plugin add + append enable patch
 node bin/dsh-multi-chat.mjs start --ports 3080,3081
 ```
 
-> 打 tag 后，GitHub 会自动生成 source zip/tarball 资产；也可在 Release 附加 `npm pack` 产出的 `.tgz` 作为离线安装包。
+> Tagging a release makes GitHub auto-generate the source zip/tarball assets; you can also attach a `npm pack`-produced `.tgz` as an offline install bundle.
 
-### 渠道三：git 直接安装
+### Channel 3: direct git install
 
 ```bash
 git clone https://github.com/daetz-coder/dsh-multi-chat.git
 cd dsh-multi-chat
 
-node bin/dsh-multi-chat.mjs install           # 装插件
+node bin/dsh-multi-chat.mjs install           # install the plugin
 node bin/dsh-multi-chat.mjs start --ports 3080,3081
-node bin/dsh-multi-chat.mjs gateway --target 127.0.0.1:3080 --token <口令>
+node bin/dsh-multi-chat.mjs gateway --target 127.0.0.1:3080 --token <token>
 ```
 
-### 本仓库直接运行（开发）
+### Running straight from this repo (development)
 
 ```bash
 node bin/dsh-multi-chat.mjs install
 node bin/dsh-multi-chat.mjs start --ports 3080,3081
 node bin/dsh-multi-chat.mjs stop
-node bin/dsh-multi-chat.mjs gateway --target 127.0.0.1:3080 --token <口令>
+node bin/dsh-multi-chat.mjs gateway --target 127.0.0.1:3080 --token <token>
 ```
 
-## 🔍 发现与生态
+## 🔍 Discovery & ecosystem
 
-本插件遵循 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 官方 client 插件规范：
+This plugin follows the official [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) client plugin spec:
 
-- **在 GitHub 插件生态中被发现**：给本仓库添加 [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic，即可在官方 [`dsh-plugin` topic 页](https://github.com/topics/dsh-plugin) 被搜索到（官方推荐的第三方插件发现方式）。
-- **三语技术文档**：插件包 `plugin/dsh-client-ui-multi-wall/` 下提供 `README.md`（英文）、`README.zh.md`（中文）与 `README.i18n.yaml`（双语一致性记录），结构与官方 `packages/client/*` 插件一致。
-- **纯增量、不碰核心**：只注册 `conversation.view` / `sidebar.footer.action` 两个列表槽位 + `/multi/api/*` 只读路由，不改动任何官方核心逻辑。
+- **Be found in the GitHub plugin ecosystem**: adding the [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic to this repo makes it searchable on the official [`dsh-plugin` topic page](https://github.com/topics/dsh-plugin) (the officially recommended third-party discovery path).
+- **Bilingual technical docs**: under `plugin/dsh-client-ui-multi-wall/` there is `README.md` (English), `README.zh.md` (Chinese), and `README.i18n.yaml` (bilingual consistency record), matching the structure of official `packages/client/*` plugins.
+- **Purely additive, no core touching**: registers only the `conversation.view` / `sidebar.footer.action` list slots + `/multi/api/*` read-only routes, changing no official core logic.
 
-## 在官方 monorepo 中的位置
+## Where it lives in the official monorepo
 
-`packages/client/ui-multi-wall` 是遵循官方 client 插件规范的包（tsconfig host/client 分离、tsdown clientBundle、locales zh/en、invariant 伴随、HMR 安全测试），并已接入 `packages/bundle/web-app` 的 dsh.client roster 与 `tsconfig.client.json` 聚合。构建：
+`packages/client/ui-multi-wall` is a spec-compliant client plugin package (separate host/client tsconfig, tsdown clientBundle, zh/en locales, invariant companion, HMR-safe tests) wired into `packages/bundle/web-app`'s dsh.client roster and the `tsconfig.client.json` aggregate. To build:
 
 ```bash
 cd harness-src
 pnpm install
-pnpm --filter @deepseek-ai/dsh-client-ui-multi-wall bundle   # 产出 lib/client.js
-npx vitest run packages/client/ui-multi-wall                 # 14 项测试
+pnpm --filter @deepseek-ai/dsh-client-ui-multi-wall bundle   # produces lib/client.js
+npx vitest run packages/client/ui-multi-wall                 # 14 tests
 ```
 
 ## License
