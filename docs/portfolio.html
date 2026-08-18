@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI / Agent 开发实习 · dsh-multi-chat 作品集</title>
+<meta name="description" content="DeepSeek Harness (DSH) 多窗口墙插件开发者作品集 —— AI/Agent 开发实习求职展示页。npx dsh-multi-chat install">
+<style>
+  :root {
+    --bg: #0f141a;
+    --bg-card: #161d26;
+    --bg-soft: #1b2530;
+    --border: #26313f;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --accent: #4f8cff;
+    --accent-2: #3ddc84;
+    --accent-3: #f0883e;
+    --purple: #a371f7;
+    --red: #f85149;
+    --green: #3fb950;
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  /* ===== Header ===== */
+  header {
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+  }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+  .badge-row img { height: 22px; }
+  h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: .3px;
+    margin-bottom: 6px;
+  }
+  .role {
+    font-size: 1.15rem;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .tagline {
+    color: var(--text-dim);
+    font-size: 1.02rem;
+    max-width: 720px;
+  }
+  .channels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+  }
+  .channel {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg-card);
+    color: var(--text);
+    text-decoration: none;
+    font-size: .9rem;
+    transition: border-color .15s, background .15s, transform .1s;
+  }
+  .channel:hover { border-color: var(--accent); background: var(--bg-soft); transform: translateY(-1px); }
+  .channel .ico { font-size: 1.05rem; }
+
+  /* ===== Sections ===== */
+  section { padding: 30px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+  h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .bar {
+    display: inline-block;
+    width: 4px; height: 20px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* Stat grid */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .stat {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+  }
+  .stat .num { font-size: 1.5rem; font-weight: 800; color: var(--accent); }
+  .stat .lbl { font-size: .8rem; color: var(--text-dim); margin-top: 2px; }
+
+  /* Cards */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+  .card h3 { font-size: 1.05rem; margin-bottom: 8px; }
+  .card p { color: var(--text-dim); font-size: .92rem; }
+  .card .badge {
+    display: inline-block;
+    font-size: .72rem;
+    padding: 2px 9px;
+    border-radius: 999px;
+    margin-right: 6px;
+    margin-bottom: 6px;
+  }
+  .b-green { background: rgba(63,185,80,.15); color: var(--green); }
+  .b-blue { background: rgba(79,140,255,.15); color: var(--accent); }
+  .b-orange { background: rgba(240,136,62,.15); color: var(--accent-3); }
+  .b-purple { background: rgba(163,113,247,.15); color: var(--purple); }
+
+  /* Tech */
+  .tech {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tech span {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: .85rem;
+    color: var(--text);
+  }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 7px; top: 6px; bottom: 6px;
+    width: 2px; background: var(--border);
+  }
+  .tl-item { position: relative; margin-bottom: 18px; }
+  .tl-item::before {
+    content: ''; position: absolute; left: -21px; top: 7px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent); border: 2px solid var(--bg);
+  }
+  .tl-item h4 { font-size: 1rem; margin-bottom: 2px; }
+  .tl-item .tl-date { color: var(--text-dim); font-size: .82rem; margin-bottom: 6px; }
+  .tl-item p { color: var(--text-dim); font-size: .92rem; }
+
+  /* Listing / verifiable */
+  .listing {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .listing a {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 13px;
+    border-radius: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    text-decoration: none;
+    font-size: .88rem;
+  }
+  .listing a:hover { border-color: var(--green); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot-ok { background: var(--green); }
+  .dot-pending { background: var(--accent-3); }
+
+  /* Code detail */
+  pre {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: .85rem;
+    overflow-x: auto;
+    color: #d0d7de;
+    margin: 12px 0;
+  }
+  code { font-family: "SF Mono", Consolas, "Courier New", monospace; }
+  .muted { color: var(--text-dim); font-size: .9rem; }
+  a { color: var(--accent); }
+  .link-row a { text-decoration: none; }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: .82rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ================= HEADER ================= -->
+  <header>
+    <div class="badge-row">
+      <img src="https://img.shields.io/npm/v/dsh-multi-chat" alt="npm version">
+      <img src="https://img.shields.io/badge/license-MIT-blue" alt="license">
+      <img src="https://img.shields.io/badge/dsh--plugin-community-brightgreen" alt="dsh-plugin">
+      <img src="https://awesome-dsh-plugin.com/badge.svg" alt="awesome-dsh-plugin">
+      <img src="https://dshfind.com/api/badge/daetz-coder/dsh-multi-chat" alt="dshfind">
+    </div>
+    <h1>dsh-multi-chat · 多对话，一屏驾驭</h1>
+    <div class="role">DeepSeek Harness (DSH) 插件开发者 · 面向 AI / Agent 开发实习</div>
+    <p class="tagline">
+      独立开发并发布了一个 <strong>AI Agent 生态插件</strong>—— 为 DeepSeek Harness（DSH，DeepSeek 开源的 Agent Harness 框架，<em>"everything is a plugin"</em>）
+      构建「多窗口墙」：并排运行、监控 N 个 Agent 对话实例，并内置带口令认证的局域网网关支持手机/平板远程访问。
+    </p>
+
+    <!-- 多渠道 -->
+    <div class="channels">
+      <a class="channel" href="https://github.com/daetz-coder/dsh-multi-chat" target="_blank" rel="noopener"><span class="ico">🐙</span> GitHub</a>
+      <a class="channel" href="https://www.npmjs.com/package/dsh-multi-chat" target="_blank" rel="noopener"><span class="ico">📦</span> npm</a>
+      <a class="channel" href="https://blog.csdn.net/a_student_2020" target="_blank" rel="noopener"><span class="ico">🖥️</span> CSDN</a>
+      <a class="channel" href="https://www.zhihu.com/people/yi-yue-wang-ta-xiang" target="_blank" rel="noopener"><span class="ico">💡</span> 知乎</a>
+      <a class="channel" href="https://github.com/daetz-coder/dsh-multi-chat/releases" target="_blank" rel="noopener"><span class="ico">🚀</span> Release</a>
+    </div>
+  </header>
+
+  <!-- ================= 核心数据 ================= -->
+  <section>
+    <h2><span class="bar"></span>核心数据</h2>
+    <div class="stats">
+      <div class="stat"><div class="num">39</div><div class="lbl">Git 提交数</div></div>
+      <div class="stat"><div class="num">14</div><div class="lbl">npm 版本</div></div>
+      <div class="stat"><div class="num">0.6.6</div><div class="lbl">最新版本</div></div>
+      <div class="stat"><div class="num">5+</div><div class="lbl">收录渠道</div></div>
+      <div class="stat"><div class="num">MIT</div><div class="lbl">开源协议</div></div>
+      <div class="stat"><div class="num">TS</div><div class="lbl">主要语言</div></div>
+    </div>
+  </section>
+
+  <!-- ================= 项目亮点 ================= -->
+  <section>
+    <h2><span class="bar"></span>项目亮点的技术深度</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>🪟 多窗口墙（Multi-Window Wall）</h3>
+        <p>在官方 Web 界面内并排显示 N 个 DSH Agent 实例（一个端口一格），通过 <code>conversation.view</code> / <code>sidebar.footer.action</code> 增量列表槽位注册，不改写任何官方核心逻辑。</p>
+        <span class="badge b-blue">官方 bundle 形态</span><span class="badge b-purple">Cordis 插件</span>
+      </div>
+      <div class="card">
+        <h3>🔍 Port 自动发现</h3>
+        <p>扫描端口区间自动发现运行中的实例（自动排除自身端口），经只读 JSON 路由 <code>/multi/api/ports</code> / <code>status</code> / <code>create</code> / <code>stop</code> / <code>link</code> 探活与生命周期管理。</p>
+        <span class="badge b-blue">只读路由</span><span class="badge b-green">零侵入</span>
+      </div>
+      <div class="card">
+        <h3>🔐 认证局域网网关</h3>
+        <p>为解决 DSH 禁止 <code>--host 0.0.0.0</code> 的远程安全限制，内置带 HMAC 签名会话 Cookie 的反向代理网关（<code>node:net</code>），支持手机/平板远程访问。</p>
+        <span class="badge b-orange">安全设计</span><span class="badge b-purple">node:net</span>
+      </div>
+      <div class="card">
+        <h3>🐚 跨平台 CLI + 官方形态</h3>
+        <p>提供 <code>npx dsh-multi-chat install|start|stop|gateway</code>，采用官方 <code>dsh.bundle.patch</code> 声明式 bundle 形态，实现「一行安装、一行卸载」，无需手动改 patch。</p>
+        <span class="badge b-blue">CLI</span><span class="badge b-green">everything is a plugin</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 技术栈 ================= -->
+  <section>
+    <h2><span class="bar"></span>技术栈 / 技能</h2>
+    <div class="tech">
+      <span>TypeScript</span><span>Node.js</span><span>React</span>
+      <span>Cordis 插件框架</span><span>DeepSeek Harness SDK</span>
+      <span>pnpm monorepo</span><span>npm 发布</span><span>tsdown 构建</span>
+      <span>node:net 反向代理</span><span>YAML patch 层</span>
+      <span>Git / GitHub Actions</span><span>PowerShell 脚本</span>
+    </div>
+    <p class="muted" style="margin-top:14px">
+      · 官方 <code>@deepseek-ai/*</code> 包以 <code>peerDependencies</code> 正确声明（11 个），符合 DSH 官方依赖规范
+      <br>· 双语文档（中 / 英）+ 三语插件文档（<code>README.i18n.yaml</code> 一致性记录）
+    </p>
+  </section>
+
+  <!-- ================= 生态收录证明 ================= -->
+  <section>
+    <h2><span class="bar"></span>生态收录 · 可验证成果</h2>
+    <p class="muted" style="margin-bottom:16px">以下均为真实、可点击验证的收录/发布记录：</p>
+    <div class="listing">
+      <a href="https://www.npmjs.com/package/dsh-multi-chat"><span class="dot dot-ok"></span>npm 已发布 · latest 0.6.6</a>
+      <a href="https://github.com/awesome-dsh-plugin/awesome-dsh-plugin"><span class="dot dot-ok"></span>awesome-dsh-plugin · 已合并 (PR #1263)</a>
+      <a href="https://github.com/beancookie/awesome-dsh-plugin"><span class="dot dot-ok"></span>beancookie · 已合并 (PR #54)</a>
+      <a href="https://dshfind.com/plugins/daetz-coder/dsh-multi-chat"><span class="dot dot-ok"></span>dshfind.com · 已收录</a>
+      <a href="https://github.com/Dominic789654/awesome-deepseek-harness"><span class="dot dot-ok"></span>awesome-deepseek-harness · 已收录</a>
+      <a href="https://dshfind.com/plugins/daetz-coder/dsh-multi-chat"><span class="dot dot-pending"></span>YELEBAI marketplace · 已发现</a>
+      <a href="https://deepseek-harness-plugin.com/plugins/"><span class="dot dot-pending"></span>deepseek-harness-plugin.com · 审核中</a>
+      <a href="https://github.com/daetz-coder/dsh-multi-chat/releases"><span class="dot dot-ok"></span>GitHub Release v0.6.x</a>
+    </div>
+    <p class="muted" style="margin-top:14px">
+      ✅ = 已生效　·　⏳ = 人工审核中。所有收录基于 <code>dsh-plugin</code> topic + <code>dsh.bundle.patch</code> 官方声明形态自动/人工核验。
+    </p>
+  </section>
+
+  <!-- ================= 开发历程 ================= -->
+  <section>
+    <h2><span class="bar"></span>开发历程 Timeline</h2>
+    <div class="timeline">
+      <div class="tl-item">
+        <h4>立项：多实例监控痛点</h4>
+        <div class="tl-date">2026-08-16</div>
+        <p>官方 DSH Web 一次只能看一个对话，多实例并行时无法总览 Agent 实时进度。</p>
+      </div>
+      <div class="tl-item">
+        <h4>核心实现 + 官方形态升级</h4>
+        <div class="tl-date">2026-08-16</div>
+        <p>实现多窗口墙、自动发现、认证网关；重构为官方 <code>dsh.bundle.patch</code> 声明式 bundle 形态，实现「一行安装、一行卸载」。</p>
+      </div>
+      <div class="tl-item">
+        <h4>npm 发布 + 中文/英文文档</h4>
+        <div class="tl-date">2026-08-16 ~ 17</div>
+        <p>发布 <code>dsh-multi-chat</code>（14 版本迭代至 0.6.6），编写中英文 README、双语发布笔记。</p>
+      </div>
+      <div class="tl-item">
+        <h4>生态收录 & 曝光拓展</h4>
+        <div class="tl-date">2026-08-17</div>
+        <p>主动提交 4 个主流渠道（2 个已合并），5+ 渠道靠 <code>dsh-plugin</code> topic 自动覆盖，撰写《DSH 插件收录全流程》文档。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 快速上手指南 ================= -->
+  <section>
+    <h2><span class="bar"></span>快速验证：一键安装</h2>
+    <pre><code># 安装（官方 bundle 形态，无需手动改 patch）
+npx dsh-multi-chat install
+
+# 启动 3 个 Agent 实例
+npx dsh-multi-chat start --ports 3080,3081,3082
+
+# 卸载（一行干净卸载）
+dsh plugin --profile web remove @deepseek-ai/dsh-client-ui-multi-wall</code></pre>
+  </section>
+
+  <!-- ================= 关于 / 致谢 ================= -->
+  <section>
+    <h2><span class="bar"></span>关于 / 展望</h2>
+    <p>
+      本项目从「多实例监控痛点」出发，完整实践了 DSH/AI Agent 生态的<b>插件开发全链路</b>：
+      需求分析 → 官方扩展点设计 → 跨平台 CLI → npm 发布 → 双语文档 → 生态收录与曝光运营。
+      期望在 AI / Agent 开发岗位上，把这种「从 0 到 1 构建 Agent 生态组件」的能力应用到真实业务。
+    </p>
+  </section>
+
+  <footer>
+    dsh-multi-chat project showcase · Generated for AI/Agent 开发实习求职<br>
+    GitHub: <a href="https://github.com/daetz-coder/dsh-multi-chat">daetz-coder/dsh-multi-chat</a>
+    · npm: <a href="https://www.npmjs.com/package/dsh-multi-chat">dsh-multi-chat</a>
+    · 数据核验日期 2026-08-17
+  </footer>
+
+</div>
+</body>
+</html>
