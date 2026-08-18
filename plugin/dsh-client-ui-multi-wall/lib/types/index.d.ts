@@ -26,6 +26,16 @@ export interface MultiWallConfig {
      * answers `{ lan: [publicUrl + '/'], reachable: true }`.
      */
     publicUrl?: string;
+    /**
+     * Gateway listen port for the inline phone-access gateway. `0` (default)
+     * means `targetPort + 5000`.
+     */
+    gatewayPort?: number;
+    /**
+     * Optional fixed login token for the inline gateway. Empty (default) means
+     * a random token is generated per gateway start (returned by /multi/api/link).
+     */
+    gatewayToken?: string;
 }
 /** Schema-validated config (the Loader resolves defaults for absent keys). */
 export declare const Config: z<Schemastery.ObjectS<{
@@ -33,11 +43,15 @@ export declare const Config: z<Schemastery.ObjectS<{
     scanTo: z<number, number>;
     ports: z<number[], number[]>;
     publicUrl: z<string, string>;
+    gatewayPort: z<number, number>;
+    gatewayToken: z<string, string>;
 }>, Schemastery.ObjectT<{
     scanFrom: z<number, number>;
     scanTo: z<number, number>;
     ports: z<number[], number[]>;
     publicUrl: z<string, string>;
+    gatewayPort: z<number, number>;
+    gatewayToken: z<string, string>;
 }>>;
 /** One stop result row from /multi/api/stop. */
 export interface StopRow {

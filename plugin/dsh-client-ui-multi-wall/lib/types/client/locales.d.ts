@@ -10,6 +10,7 @@ export declare const zh: {
     'scan.from': string;
     'scan.to': string;
     create: string;
+    'create.pending': string;
     'create.done': string;
     'create.failed': string;
     'create.unknown': string;
@@ -24,6 +25,7 @@ export declare const zh: {
     'link.hint': string;
     'link.reachable': string;
     'link.unreachable': string;
+    'link.token': string;
     columns: string;
     'columns.auto': string;
     refresh: string;
@@ -57,6 +59,7 @@ export declare const en: {
     'scan.from': string;
     'scan.to': string;
     create: string;
+    'create.pending': string;
     'create.done': string;
     'create.failed': string;
     'create.unknown': string;
@@ -71,6 +74,7 @@ export declare const en: {
     'link.hint': string;
     'link.reachable': string;
     'link.unreachable': string;
+    'link.token': string;
     columns: string;
     'columns.auto': string;
     refresh: string;

@@ -1,7 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 /**
  * WallView: the multi-window wall as a `conversation.view` ring entry. When
- * the header's "多窗口墙" tab is selected, the right panel swaps from the
+ * the header's "多窗口" tab is selected, the right panel swaps from the
  * chat to this view — a toolbar plus a grid of iframes, one pane per running
  * DSH instance (127.0.0.1:<port>). Pure additive UI; no existing slot is
  * replaced.
@@ -24,6 +24,29 @@ const COLUMN_PRESETS = ['auto', '1', '2', '3', '4', '6'];
 /** Embed flag appended to every pane URL; such pages register no wall UI. */
 const EMBED_FLAG = 'multi-wall=embed';
 /**
+ * Whether this wall is being viewed through the phone gateway (a non-loopback
+ * host) rather than on the machine running DSH. When remote, pane iframes must
+ * load through the gateway's `/gw/<port>` route — a phone's `127.0.0.1` points
+ * at the phone itself, not the host.
+ */
+function isRemoteViewer() {
+    const host = typeof window !== 'undefined' ? window.location.hostname : '';
+    return host !== 'localhost' && host !== '127.0.0.1' && host !== '::1';
+}
+/**
+ * The iframe URL for a pane. Local viewers embed the loopback instance
+ * directly; remote (phone) viewers route through the gateway that is already
+ * serving this page, appending the port so the gateway proxies to it.
+ * @param port - target DSH instance port.
+ * @returns the pane URL.
+ */
+function paneUrl(port) {
+    if (isRemoteViewer()) {
+        return `${window.location.origin}/gw/${port}/?${EMBED_FLAG}`;
+    }
+    return `http://127.0.0.1:${port}/?${EMBED_FLAG}`;
+}
+/**
  * One pane: header (port, liveness dot, zoom/refresh/open/stop/remove) plus
  * the embedded original DSH UI.
  */
@@ -32,8 +55,8 @@ function WallPane(props) {
     return (_jsxs("section", { className: clsx(css.pane, zoomed && css.zoomed), "data-port": port, children: [_jsxs("div", { className: css.paneHead, children: [_jsx(StateDot, { state: alive ? 'done' : 'warning', size: 8, className: css.dot }), _jsxs("span", { className: css.paneTitle, children: ["127.0.0.1:", port] }), _jsxs("div", { className: css.paneActions, children: [_jsx("button", { type: "button", className: css.action, title: t('zoom'), onClick: onZoom, children: _jsx(IconFullscreenOutline16, { size: 14 }) }), _jsx("button", { type: "button", className: css.action, title: t('reload'), onClick: (e) => {
                                     e.currentTarget.closest('section')?.querySelector('iframe')?.contentWindow?.location.reload();
                                 }, children: _jsx(IconRefreshOutline16, { size: 14 }) }), _jsx("button", { type: "button", className: css.action, title: t('openTab'), onClick: () => {
-                                    window.open(`http://127.0.0.1:${port}/`, '_blank');
-                                }, children: _jsx(IconRightUpOutline16, { size: 14 }) }), _jsx("button", { type: "button", className: clsx(css.action, css.danger, stopping && css.confirm), title: t('stop'), onClick: onStop, children: stopping ? t('stop.confirm') : _jsx(IconStopFill16, { size: 14 }) }), _jsx("button", { type: "button", className: css.action, title: t('remove'), onClick: onRemove, children: _jsx(IconCloseOutline16, { size: 14 }) })] })] }), _jsx("div", { className: css.paneBody, children: _jsx("iframe", { title: `DSH :${port}`, src: `http://127.0.0.1:${port}/?${EMBED_FLAG}`, loading: "lazy" }) })] }));
+                                    window.open(paneUrl(port), '_blank');
+                                }, children: _jsx(IconRightUpOutline16, { size: 14 }) }), _jsx("button", { type: "button", className: clsx(css.action, css.danger, stopping && css.confirm), title: t('stop'), onClick: onStop, children: stopping ? t('stop.confirm') : _jsx(IconStopFill16, { size: 14 }) }), _jsx("button", { type: "button", className: css.action, title: t('remove'), onClick: onRemove, children: _jsx(IconCloseOutline16, { size: 14 }) })] })] }), _jsx("div", { className: css.paneBody, children: _jsx("iframe", { title: `DSH :${port}`, src: paneUrl(port), loading: "lazy" }) })] }));
 }
 /**
  * Render the wall: toolbar plus the horizontally-filled pane grid. Discovery
@@ -152,11 +175,19 @@ export function WallView({ useStore, actions, discover, probe, stop, create, lin
         setLinkCopied(false);
         setStatus('');
     };
+    // Copy the first phone-reachable link to the clipboard. When the gateway
+    // issued a token it is appended as `?token=` so the phone bypasses the login
+    // form entirely (the gateway accepts a matching `?token=` query); the URL is
+    // otherwise the bare link. The standalone token line is still shown above so
+    // users who prefer typing it can.
     const copyFirstLink = async () => {
         if (linkInfo === null || linkInfo.lan.length === 0)
             return;
         try {
-            await navigator.clipboard.writeText(linkInfo.lan[0] ?? '');
+            const base = linkInfo.lan[0] ?? '';
+            const token = linkInfo.token ?? '';
+            const url = token !== '' ? `${base}?token=${encodeURIComponent(token)}` : base;
+            await navigator.clipboard.writeText(url);
             setLinkCopied(true);
         }
         catch {
@@ -167,7 +198,7 @@ export function WallView({ useStore, actions, discover, probe, stop, create, lin
     // user may want to watch (or stop) the instance they are in. Recursion is
     // prevented by the embed flag, not by hiding the self pane.
     const shown = ports;
-    return (_jsxs("div", { className: css.wall, role: "region", "aria-label": t('overlay.title'), "data-wall-view": "", children: [_jsxs("div", { className: css.toolbar, children: [_jsx("span", { className: css.title, children: t('overlay.title') }), _jsx("span", { className: css.status, children: status }), _jsxs("div", { className: css.controls, children: [_jsxs("label", { className: css.field, children: [t('scan.from'), _jsx(Input, { type: "number", value: scanFrom, onChange: e => setScanFrom(Number(e.target.value)) })] }), _jsxs("label", { className: css.field, children: [t('scan.to'), _jsx(Input, { type: "number", value: scanTo, onChange: e => setScanTo(Number(e.target.value)) })] }), _jsx(Button, { variant: "toolbar", size: "sm", onClick: () => { void runDiscovery(); }, children: t('scan') }), _jsx(Button, { variant: "toolbar", size: "sm", icon: _jsx(IconPlusOutline16, { size: 14 }), disabled: creating, onClick: () => { void handleCreate(); }, children: t('create') }), _jsx(Menu, { open: colsMenuOpen, anchor: _jsx(Button, { variant: "toolbar", size: "sm", icon: _jsx(IconRightUpOutline16, { size: 14 }), onClick: () => { setColsMenuOpen(true); }, children: columns === 'auto' ? t('columns.auto') : columns }), items: COLUMN_PRESETS.map(c => ({
+    return (_jsxs("div", { className: css.wall, role: "region", "aria-label": t('overlay.title'), "data-wall-view": "", children: [_jsxs("div", { className: css.toolbar, children: [_jsx("span", { className: css.title, children: t('overlay.title') }), _jsx("span", { className: css.status, children: status }), _jsxs("div", { className: css.controls, children: [_jsxs("label", { className: css.field, children: [t('scan.from'), _jsx(Input, { type: "number", value: scanFrom, onChange: e => setScanFrom(Number(e.target.value)) })] }), _jsxs("label", { className: css.field, children: [t('scan.to'), _jsx(Input, { type: "number", value: scanTo, onChange: e => setScanTo(Number(e.target.value)) })] }), _jsx(Button, { variant: "toolbar", size: "sm", onClick: () => { void runDiscovery(); }, children: t('scan') }), _jsx(Button, { variant: "toolbar", size: "sm", icon: _jsx(IconPlusOutline16, { size: 14 }), disabled: creating, onClick: () => { void handleCreate(); }, children: creating ? t('create.pending') : t('create') }), _jsx(Menu, { open: colsMenuOpen, anchor: _jsx(Button, { variant: "toolbar", size: "sm", icon: _jsx(IconRightUpOutline16, { size: 14 }), onClick: () => { setColsMenuOpen(true); }, children: columns === 'auto' ? t('columns.auto') : columns }), items: COLUMN_PRESETS.map(c => ({
                                     id: c,
                                     label: c === 'auto' ? t('columns.auto') : c,
                                 })), selectedId: columns, onSelect: (id) => {
@@ -179,7 +210,9 @@ export function WallView({ useStore, actions, discover, probe, stop, create, lin
                                     });
                                     setStatus(t('status.refreshed'));
                                 }, children: t('refresh') }), _jsx(Button, { variant: "toolbar", size: "sm", icon: _jsx(IconGlobeOutline14, { size: 14 }), "aria-label": t('link.aria'), onClick: () => { void handleLink(); }, children: t('link') }), _jsx(Button, { variant: "toolbar", size: "sm", icon: _jsx(IconCloseOutline16, { size: 14 }), "aria-label": t('exit.aria'), title: t('exit'), onClick: () => { exitWall(); }, children: t('exit') })] })] }), linkOpen && linkInfo !== null && (_jsxs("div", { className: css.linkBar, children: [linkInfo.reachable
-                        ? (_jsxs(_Fragment, { children: [_jsx("span", { className: css.linkText, children: t('link.reachable').replace('{urls}', linkInfo.lan.join('  ')) }), linkInfo.lan.length > 0 && (_jsx(Button, { variant: "outline", size: "sm", onClick: () => { void copyFirstLink(); }, children: linkCopied ? t('link.copied') : t('link.copy') }))] }))
+                        ? (_jsxs(_Fragment, { children: [_jsxs("span", { className: css.linkText, children: [t('link.reachable').replace('{urls}', linkInfo.lan.join('  ')), linkInfo.token !== undefined && linkInfo.token !== ''
+                                            ? `  ${t('link.token').replace('{token}', linkInfo.token)}`
+                                            : ''] }), linkInfo.lan.length > 0 && (_jsx(Button, { variant: "outline", size: "sm", onClick: () => { void copyFirstLink(); }, children: linkCopied ? t('link.copied') : t('link.copy') }))] }))
                         : (_jsx("span", { className: css.linkText, children: t('link.unreachable').replace('{hint}', linkInfo.hint ?? '') })), _jsx(Button, { variant: "ghost", size: "sm", icon: _jsx(IconCloseOutline16, { size: 14 }), onClick: () => { setLinkOpen(false); }, children: t('overlay.close') })] })), _jsxs("div", { className: css.grid, "data-cols": columns, children: [shown.map(port => (_jsx(WallPane, { port: port, alive: aliveRef.current[port] ?? true, zoomed: zoomedPort === port, stopping: confirmingStop === port, onZoom: () => setZoomedPort(zoomedPort === port ? null : port), onStop: () => { void handleStop(port); }, onRemove: () => { setConfirmingStop(null); actions.removePort(port); }, t: t }, port))), shown.length === 0 && (_jsxs("div", { className: css.empty, children: [_jsx("p", { children: t('empty') }), _jsx("p", { className: css.hint, children: t('empty.hint') })] }))] })] }));
 }
 //# sourceMappingURL=WallView.js.map

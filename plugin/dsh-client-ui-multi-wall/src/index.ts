@@ -229,47 +229,76 @@ function resolveLauncher(): Launcher {
 }
 
 /**
- * Probe whether a local TCP port is already listening (no HTTP needed).
- * @param port - the port to check.
- * @returns whether something listens on it.
+ * Collect every distinct local TCP port that is listening, in ONE command
+ * (not one `netstat`/`lsof` per candidate, which the old free-port scan ran
+ * sequentially and could take many seconds on slow Windows boxes). Windows
+ * parses `netstat`; POSIX parses `lsof` `(LISTEN)` lines.
+ * @returns the set of busy ports.
  */
-async function isPortBusy(port: number): Promise<boolean> {
-  try {
-    const pids = await listeningPids(port)
-    return pids.length > 0
-  } catch {
-    return true // probe failure is treated as busy (fail loud)
+async function listeningPorts(): Promise<Set<number>> {
+  const set = new Set<number>()
+  if (process.platform === 'win32') {
+    const stdout = await execStdout('netstat', ['-ano', '-p', 'tcp'])
+    for (const line of stdout.split(/\r?\n/)) {
+      // TCP    127.0.0.1:3080   0.0.0.0:0   LISTENING   12345
+      const m = /^\s*TCP\s+([0-9.]+|\*|\[::\]):(\d+)\s+\S+\s+LISTENING\s+(\d+)\s*$/.exec(line)
+      if (m !== null) set.add(Number(m[2]))
+    }
+    return set
   }
+  const stdout = await execStdout('lsof', ['-nP', '-iTCP', '-sTCP:LISTEN'])
+  for (const line of stdout.split(/\r?\n/)) {
+    // node  1234 user  13u  IPv4  12345  0t0  TCP 127.0.0.1:3080 (LISTEN)
+    const m = /:(\d+)\s+\(LISTEN\)\s*$/.exec(line.trim())
+    if (m !== null) set.add(Number(m[1]))
+  }
+  return set
 }
 
 /**
  * Pick the first free port in [lo, hi] that is neither the serving port nor
- * already listening.
+ * already listening. The busy set is resolved once (a single command), then
+ * scanned in memory.
  * @param lo - first port of the range.
  * @param hi - last port of the range.
  * @param selfPort - the port serving this wall (never chosen).
  * @returns a free port, or undefined when the range is exhausted.
  */
 async function pickFreePort(lo: number, hi: number, selfPort: number): Promise<number | undefined> {
+  const busy = await listeningPorts()
   for (let port = lo; port <= hi; port++) {
     if (port === selfPort) continue
-    if (await isPortBusy(port)) continue
+    if (busy.has(port)) continue
     return port
   }
   return undefined
 }
 
 /**
- * Spawn a new `dsh web` instance on a port and wait until it serves the DSH
- * shell (probe). Detached so it outlives this process. The child's stderr is
- * captured and quoted into every failure, so a crash or a bad bin surfaces a
- * concrete reason instead of a bare timeout.
+ * Spawn a new `dsh web` instance on a port and decide quickly whether it is
+ * viable. Detached so it outlives this process. This is intentionally NOT a
+ * full readiness gate: the wall polls liveness itself, so the create response
+ * returns fast and a still-booting instance simply shows a pane that lights up
+ * when the server finishes. A short bounded wait still catches immediate
+ * spawn failures (bad bin, ENOENT) and very fast boots.
+ *
+ * On a genuine launch failure the child is killed so no orphan lingers; on a
+ * slow-but-viable start the deadline returns ok:true and the child keeps
+ * booting in the background (the pane already mounted, liveness confirms when
+ * alive). The child's stderr is captured and quoted into every failure so a
+ * crash or a bad bin surfaces a concrete reason instead of a bare timeout.
  * @param launcher - how to spawn the dsh CLI.
  * @param port - the port for the new instance.
- * @param timeoutMs - how long to wait for readiness.
+ * @param timeoutMs - how long to wait before handing back ok:true.
+ * @param pollMs - readiness probe interval while waiting.
  * @returns ok plus the port, or ok:false with a reason.
  */
-async function startInstance(launcher: Launcher, port: number, timeoutMs = 20000): Promise<{ ok: boolean; port: number; error?: string }> {
+async function startInstance(
+  launcher: Launcher,
+  port: number,
+  timeoutMs = 3000,
+  pollMs = 300,
+): Promise<{ ok: boolean; port: number; error?: string }> {
   const child = spawn(launcher.file, [...launcher.args, String(port)], {
     detached: true,
     stdio: ['ignore', 'ignore', 'pipe'],
@@ -294,6 +323,8 @@ async function startInstance(launcher: Launcher, port: number, timeoutMs = 20000
   const deadline = Date.now() + timeoutMs
   for (;;) {
     if (spawnFailure.error !== null) {
+      // Can't launch at all: reap the child so no orphan lingers.
+      try { child.kill() } catch { /* already gone */ }
       return { ok: false, port, error: `new instance failed to start: ${spawnFailure.error.message}` }
     }
     if (child.exitCode !== null) {
@@ -302,9 +333,12 @@ async function startInstance(launcher: Launcher, port: number, timeoutMs = 20000
     const row = await probePort(port)
     if (row.alive) return { ok: true, port }
     if (Date.now() > deadline) {
-      return { ok: false, port, error: `instance did not become ready in time${detail()}` }
+      // Not ready yet but viable: hand back ok so the create response isn't
+      // blocked on a slow boot — the pane mounts and the wall's own liveness
+      // poll lights it up when the server finishes starting.
+      return { ok: true, port }
     }
-    await new Promise(resolve => setTimeout(resolve, 400))
+    await new Promise(resolve => setTimeout(resolve, pollMs))
   }
 }
 
@@ -467,8 +501,11 @@ export function apply(ctx: Context, config: MultiWallConfig = {}): void {
 
   // Start a NEW DSH instance and return its port, so the wall can grow a
   // fresh window without leaving the page. Spawns `dsh web` on the first
-  // free port of the scan range (never the serving port) and waits until it
-  // answers the DSH shell probe.
+  // free port of the scan range (never the serving port). The response
+  // returns as soon as a port is allocated (a couple seconds max) instead of
+  // blocking on the new instance's readiness — the wall's own liveness poll
+  // confirms the server when it finishes booting, and a spawn failure is
+  // surfaced immediately as ok:false with a concrete reason.
   // POST /multi/api/create   (GET also accepted for convenience)
   ctx.effect(() => ctx.webServer.register({
     kind: 'exact',

@@ -292,7 +292,7 @@ export function WallView({ useStore, actions, discover, probe, stop, create, lin
             disabled={creating}
             onClick={() => { void handleCreate() }}
           >
-            {t('create')}
+            {creating ? t('create.pending') : t('create')}
           </Button>
           <Menu
             open={colsMenuOpen}

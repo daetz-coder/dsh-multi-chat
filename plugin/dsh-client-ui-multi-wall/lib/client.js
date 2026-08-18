@@ -21,6 +21,7 @@ window.__ModuleLoader__.load({
 			"scan.from": "起始端口",
 			"scan.to": "结束端口",
 			"create": "新建窗口",
+			"create.pending": "启动中…",
 			"create.done": "已创建窗口 :{port}",
 			"create.failed": "创建失败：{error}",
 			"create.unknown": "未知原因",
@@ -67,6 +68,7 @@ window.__ModuleLoader__.load({
 			"scan.from": "Start port",
 			"scan.to": "End port",
 			"create": "New window",
+			"create.pending": "Starting…",
 			"create.done": "Created window :{port}",
 			"create.failed": "Create failed: {error}",
 			"create.unknown": "unknown reason",
@@ -242,27 +244,27 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WallView_module_css_default = {
+			"empty": "ouhzTG_empty",
 			"paneActions": "ouhzTG_paneActions",
-			"linkBar": "ouhzTG_linkBar",
+			"paneHead": "ouhzTG_paneHead",
 			"wall": "ouhzTG_wall",
-			"action": "ouhzTG_action",
+			"field": "ouhzTG_field",
+			"status": "ouhzTG_status",
+			"confirm": "ouhzTG_confirm",
+			"dot": "ouhzTG_dot",
+			"title": "ouhzTG_title",
+			"linkText": "ouhzTG_linkText",
 			"danger": "ouhzTG_danger",
 			"paneBody": "ouhzTG_paneBody",
-			"title": "ouhzTG_title",
-			"hint": "ouhzTG_hint",
-			"empty": "ouhzTG_empty",
-			"zoomed": "ouhzTG_zoomed",
-			"field": "ouhzTG_field",
-			"paneHead": "ouhzTG_paneHead",
-			"status": "ouhzTG_status",
-			"paneTitle": "ouhzTG_paneTitle",
-			"grid": "ouhzTG_grid",
-			"dot": "ouhzTG_dot",
-			"pane": "ouhzTG_pane",
-			"confirm": "ouhzTG_confirm",
-			"toolbar": "ouhzTG_toolbar",
 			"controls": "ouhzTG_controls",
-			"linkText": "ouhzTG_linkText"
+			"action": "ouhzTG_action",
+			"pane": "ouhzTG_pane",
+			"grid": "ouhzTG_grid",
+			"hint": "ouhzTG_hint",
+			"toolbar": "ouhzTG_toolbar",
+			"linkBar": "ouhzTG_linkBar",
+			"paneTitle": "ouhzTG_paneTitle",
+			"zoomed": "ouhzTG_zoomed"
 		};
 		//#endregion
 		//#region src/client/WallView.tsx
@@ -552,7 +554,7 @@ window.__ModuleLoader__.load({
 										onClick: () => {
 											handleCreate();
 										},
-										children: t("create")
+										children: creating ? t("create.pending") : t("create")
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
 										open: colsMenuOpen,
@@ -681,8 +683,8 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var WallToggle_module_css_default = {
-			"row": "bmjS6q_row",
-			"label": "bmjS6q_label"
+			"label": "bmjS6q_label",
+			"row": "bmjS6q_row"
 		};
 		//#endregion
 		//#region src/client/WallToggle.tsx

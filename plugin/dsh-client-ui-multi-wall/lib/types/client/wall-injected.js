@@ -66,6 +66,8 @@ export function createWallInjected(mount = '') {
                 host: data.host ?? 'unknown',
                 lan: data.lan ?? [],
                 reachable: data.reachable === true,
+                ...(typeof data.gatewayPort === 'number' ? { gatewayPort: data.gatewayPort } : {}),
+                ...(typeof data.token === 'string' ? { token: data.token } : {}),
                 ...(typeof data.hint === 'string' ? { hint: data.hint } : {}),
             };
         },
