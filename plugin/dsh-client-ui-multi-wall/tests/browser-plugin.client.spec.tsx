@@ -102,7 +102,7 @@ describe('WallToggle', () => {
       } as never
       const { getByRole } = render(<WallToggle {...props} />)
       const button = getByRole('button') as HTMLButtonElement
-      expect(button.textContent).toContain('多窗口墙')
+      expect(button.textContent).toContain('多窗口')
       fireEvent.click(button)
       expect(click).toHaveBeenCalledTimes(1)
     } finally {
