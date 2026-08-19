@@ -1,24 +1,39 @@
 {
   "name": "dsh-multi-chat",
-  "version": "0.6.8",
-  "description": "DSH 多对话：在官方DeepSeek Harness Web 界面里以多窗口网格并排运行、监控多个对话实例，一屏盯住所�?Agent 的实时进度；内置带口令认证的局域网网关，手�?平板也能看。npx dsh-multi-chat install|start|stop|gateway",
+  "version": "1.0.0",
+  "description": "DSH 多窗口墙：在官方 DeepSeek Harness Web 界面里以多窗口网格并排运行、监控多个对话实例，一屏盯住所有 Agent 的实时进度；内置带口令认证的局域网网关，手机/平板也能看。",
   "license": "MIT",
   "type": "module",
-  "main": "plugin/dsh-client-ui-multi-wall/lib/index.js",
+  "main": "./lib/index.js",
+  "types": "./lib/types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./plugin/dsh-client-ui-multi-wall/lib/types/index.d.ts",
-      "default": "./plugin/dsh-client-ui-multi-wall/lib/index.js"
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
     },
     "./client": {
-      "types": "./plugin/dsh-client-ui-multi-wall/lib/types/client/index.d.ts",
-      "default": "./plugin/dsh-client-ui-multi-wall/lib/client.js"
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
     },
     "./package.json": "./package.json"
   },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-primitives"
+      ]
     },
     "marketplace": {
       "profiles": [
@@ -57,22 +72,29 @@
     "scripts/",
     "patches/",
     "assets/",
+    "lib/",
+    "src/",
     "cordis.patch.yml",
     "README.md",
     "README.zh.md",
-    "plugin/dsh-client-ui-multi-wall/package.json",
-    "plugin/dsh-client-ui-multi-wall/README.md",
-    "plugin/dsh-client-ui-multi-wall/README.zh.md",
-    "plugin/dsh-client-ui-multi-wall/cordis.patch.yml",
-    "plugin/dsh-client-ui-multi-wall/lib/index.js",
-    "plugin/dsh-client-ui-multi-wall/lib/invariant.js",
-    "plugin/dsh-client-ui-multi-wall/lib/client.js",
-    "plugin/dsh-client-ui-multi-wall/lib/types/**/*.d.ts"
+    "LICENSE"
   ],
   "scripts": {
-    "test": "cd harness-src && npx vitest run packages/client/ui-multi-wall"
+    "build": "tsc -b tsconfig.json && tsdown",
+    "clean": "rm -rf lib",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "lightningcss": "^1.33.0",
+    "tsdown": "^0.11.13",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1"
   }
 }

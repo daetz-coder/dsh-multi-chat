@@ -6,5 +6,5 @@ export type WallToggleProps = PropsRuntime<'sidebar.footer.action'> & PropsLocal
  * @param props - composed slot props.
  * @returns the shortcut row.
  */
-export declare function WallToggle({ wide, t }: WallToggleProps): import("react").JSX.Element;
+export declare function WallToggle({ wide, t }: WallToggleProps): any;
 //# sourceMappingURL=WallToggle.d.ts.map

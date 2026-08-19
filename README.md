@@ -67,18 +67,16 @@ npx dsh-multi-chat start --ports 3080,3081,3082
 ## Directory layout
 
 ```
-plugin/dsh-client-ui-multi-wall/   # spec-compliant client plugin package (node half + browser half)
+dsh-multi-chat/                    # single-package structure
   lib/                             # built artifacts (lib/index.js + lib/client.js + types)
-  src/                             # source (mirrors the official monorepo packages/client/ui-multi-wall)
-patches/multi-wall.yml             # optional `--patch` overlay (usually not needed; the plugin auto-mounts via dsh.bundle)
-scripts/
-  install-plugin.ps1               # pack + install into profile (DSH auto-mounts the bundle) + prompt restart
-  start-multi.ps1 / stop-multi.ps1 # start/stop multiple dsh web instances (-Remote can carry an authenticated gateway)
-  gateway.mjs                      # token-authenticated / optional-TLS reverse-proxy gateway (phone/remote access)
-  gateway-hidden.vbs               # no-window launcher: starts gateway.mjs hidden (no console flash)
-  gateway-start.ps1 / gateway-stop.ps1  # one-shot silent start/stop of the gateway
-bin/dsh-multi-chat.mjs             # cross-platform npx CLI (install/start/stop/gateway)
-harness-src/                       # official deepseek-harness source (dev/build reference)
+  src/                             # source (node half + browser half)
+  bin/dsh-multi-chat.mjs           # cross-platform npx CLI (install/start/stop/gateway)
+  scripts/
+    install-plugin.ps1             # pack + install into profile (DSH auto-mounts the bundle)
+    start-multi.ps1 / stop-multi.ps1 # start/stop multiple dsh web instances
+    gateway.mjs                    # token-authenticated reverse-proxy gateway (phone/remote)
+  cordis.patch.yml                 # DSH bundle layer declaration
+  harness-src/                     # official deepseek-harness source (dev/build reference)
 ```
 
 ## Install & enable (Windows)
@@ -96,14 +94,14 @@ dsh web --port 3084
 Or manual:
 
 ```bash
-cd plugin/dsh-client-ui-multi-wall && npm pack          # produce a tarball
-dsh plugin --profile web add <tarball>                  # DSH adds the package to the bundle layer stack automatically
+npm pack                                                  # produce a tarball (dsh-multi-chat-1.0.0.tgz)
+dsh plugin --profile web add dsh-multi-chat-1.0.0.tgz     # DSH adds the package to the bundle layer stack automatically
 ```
 
 Uninstall (one command, nothing manual to clean up):
 
 ```bash
-dsh plugin --profile web remove @deepseek-ai/dsh-client-ui-multi-wall
+dsh plugin --profile web remove dsh-multi-chat
 ```
 
 ## Usage
@@ -184,19 +182,20 @@ node bin/dsh-multi-chat.mjs gateway --target 127.0.0.1:3080 --token <token>
 This plugin follows the official [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) client plugin spec:
 
 - **Be found in the GitHub plugin ecosystem**: adding the [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic to this repo makes it searchable on the official [`dsh-plugin` topic page](https://github.com/topics/dsh-plugin) (the officially recommended third-party discovery path).
-- **Bilingual technical docs**: under `plugin/dsh-client-ui-multi-wall/` there is `README.md` (English), `README.zh.md` (Chinese), and `README.i18n.yaml` (bilingual consistency record), matching the structure of official `packages/client/*` plugins.
+- **Bilingual technical docs**: this repo ships `README.md` (English) and `README.zh.md` (Chinese) at the root, matching the bilingual convention of official `packages/client/*` plugins.
 - **Purely additive, no core touching**: registers only the `conversation.view` / `sidebar.footer.action` list slots + `/multi/api/*` read-only routes, changing no official core logic.
 
-## Where it lives in the official monorepo
+## Building from source
 
-`packages/client/ui-multi-wall` is a spec-compliant client plugin package (separate host/client tsconfig, tsdown clientBundle, zh/en locales, invariant companion, HMR-safe tests) wired into `packages/bundle/web-app`'s dsh.client roster and the `tsconfig.client.json` aggregate. To build:
+The single-package layout uses `tsdown` for bundling and `tsc` for type declarations:
 
 ```bash
-cd harness-src
-pnpm install
-pnpm --filter @deepseek-ai/dsh-client-ui-multi-wall bundle   # produces lib/client.js
-npx vitest run packages/client/ui-multi-wall                 # 14 tests
+npm install
+npm run build          # tsc + tsdown → lib/
+npx vitest run         # tests
 ```
+
+For development against the official harness, the `harness-src/` directory is a full DSH checkout used as the build/reference workspace.
 
 ## License
 

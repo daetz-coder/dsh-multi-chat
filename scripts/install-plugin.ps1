@@ -4,7 +4,7 @@
   把多窗口墙插件装进 DSH web profile 并启用（官方声明式 bundle 形态）。
 
 .DESCRIPTION
-  1) 将 plugin/dsh-client-ui-multi-wall 打包为 tarball；
+  1) 将 dsh-multi-chat 打包为 tarball；
   2) 用 `dsh plugin --profile web add` 装进 profile；
   3) DSH 自动调和 dsh.profile.bundles：插件包声明了 dsh.bundle.patch
      （指向包内自带 cordis.patch.yml），DSH 启动时自动挂载该 bundle 层，
@@ -13,7 +13,7 @@
      侧边栏底部会出现「多窗口墙」按钮）。
 
   卸载（一条命令，无需手动删 patch 或文件）：
-    dsh plugin --profile <Profile> remove @deepseek-ai/dsh-client-ui-multi-wall
+    dsh plugin --profile <Profile> remove dsh-multi-chat
 
 .PARAMETER Profile
   profile 名，默认 web。
@@ -27,13 +27,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-$pluginDir = Join-Path $root "plugin\dsh-client-ui-multi-wall"
 
-if (-not (Test-Path $pluginDir)) { throw "未找到插件目录：$pluginDir" }
-
-# 1) pack tarball
-$tarball = Join-Path $root "dsh-client-ui-multi-wall.tgz"
-Push-Location $pluginDir
+# 1) pack tarball from root directory
+$tarball = Join-Path $root "dsh-multi-chat.tgz"
+Push-Location $root
 npm pack --pack-destination $root | Out-Null
 Pop-Location
 if (-not (Test-Path $tarball)) { throw "npm pack 失败，未生成 $tarball" }
@@ -49,4 +46,4 @@ Write-Host ""
 Write-Host "完成。重启 dsh web 生效："
 Write-Host "  dsh web --port <n>"
 Write-Host "打开后侧边栏底部应出现「多窗口墙」按钮。"
-Write-Host "卸载：dsh plugin --profile $Profile remove @deepseek-ai/dsh-client-ui-multi-wall"
+Write-Host "卸载：dsh plugin --profile $Profile remove dsh-multi-chat"

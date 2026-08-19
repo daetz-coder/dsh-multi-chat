@@ -1,1 +1,0 @@
-{"version":3,"file":"WallToggle.d.ts","sourceRoot":"","sources":["../../../src/client/WallToggle.tsx"],"names":[],"mappings":"AAeA,OAAO,KAAK,EAAE,WAAW,EAAE,YAAY,EAAE,MAAM,kCAAkC,CAAA;AAGjF,qDAAqD;AACrD,MAAM,MAAM,eAAe,GACvB,YAAY,CAAC,uBAAuB,CAAC,GACrC,WAAW,CAAC,WAAW,CAAC,CAAA;AAE5B;;;;GAIG;AACH,wBAAgB,UAAU,CAAC,EAAE,IAAI,EAAE,CAAC,EAAE,EAAE,eAAe,+BAuBtD"}

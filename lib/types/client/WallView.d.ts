@@ -12,5 +12,5 @@ export type WallViewProps = ConvViewProps & PropsStore<HandleOf<typeof createWal
  * @param props - composed slot props.
  * @returns the wall surface.
  */
-export declare function WallView({ useStore, actions, discover, probe, stop, create, link, t }: WallViewProps): import("react").JSX.Element;
+export declare function WallView({ useStore, actions, discover, probe, stop, create, link, t }: WallViewProps): any;
 //# sourceMappingURL=WallView.d.ts.map

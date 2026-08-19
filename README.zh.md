@@ -67,18 +67,16 @@ npx dsh-multi-chat start --ports 3080,3081,3082
 ## 目录结构
 
 ```
-plugin/dsh-client-ui-multi-wall/   # 官方规范 client 插件包（node half + browser half）
+dsh-multi-chat/                    # 单包结构
   lib/                             # 已构建产物（lib/index.js + lib/client.js + 类型）
-  src/                             # 源码（与官方 monorepo packages/client/ui-multi-wall 一致）
-patches/multi-wall.yml             # 可选 `--patch` overlay（通常不需要；插件经 dsh.bundle 自动挂载）
-scripts/
-  install-plugin.ps1               # 打包 + 装进 profile（DSH 自动挂载 bundle 层）+ 提示重启
-  start-multi.ps1 / stop-multi.ps1 # 启停多个 dsh web 实例（-Remote 可带认证网关）
-  gateway.mjs                      # 带令牌认证 / 可选 TLS 的反向代理网关（手机/远程访问）
-  gateway-hidden.vbs               # 无窗口启动器：用隐藏窗口方式启动 gateway.mjs（不弹控制台）
-  gateway-start.ps1 / gateway-stop.ps1  # 一键静默启动/停止网关
-bin/dsh-multi-chat.mjs             # 跨平台 npx CLI（install/start/stop/gateway）
-harness-src/                       # 官方 deepseek-harness 源码（开发/构建用）
+  src/                             # 源码（node half + browser half）
+  bin/dsh-multi-chat.mjs           # 跨平台 npx CLI（install/start/stop/gateway）
+  scripts/
+    install-plugin.ps1             # 打包 + 装进 profile（DSH 自动挂载 bundle 层）
+    start-multi.ps1 / stop-multi.ps1 # 启停多个 dsh web 实例
+    gateway.mjs                    # 带令牌认证的反向代理网关（手机/远程访问）
+  cordis.patch.yml                 # DSH bundle 层声明
+  harness-src/                     # 官方 deepseek-harness 源码（开发/构建用）
 ```
 
 ## 安装与启用（Windows）
@@ -96,14 +94,14 @@ dsh web --port 3084
 或手动：
 
 ```bash
-cd plugin/dsh-client-ui-multi-wall && npm pack          # 得到 tarball
-dsh plugin --profile web add <tarball>                  # DSH 自动把包加入 bundle 层栈
+npm pack                                                  # 得到 tarball (dsh-multi-chat-1.0.0.tgz)
+dsh plugin --profile web add dsh-multi-chat-1.0.0.tgz     # DSH 自动把包加入 bundle 层栈
 ```
 
 卸载（一条命令，无需手动清理任何文件）：
 
 ```bash
-dsh plugin --profile web remove @deepseek-ai/dsh-client-ui-multi-wall
+dsh plugin --profile web remove dsh-multi-chat
 ```
 
 ## 使用
@@ -184,19 +182,20 @@ node bin/dsh-multi-chat.mjs gateway --target 127.0.0.1:3080 --token <口令>
 本插件遵循 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 官方 client 插件规范：
 
 - **在 GitHub 插件生态中被发现**：给本仓库添加 [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic，即可在官方 [`dsh-plugin` topic 页](https://github.com/topics/dsh-plugin) 被搜索到（官方推荐的第三方插件发现方式）。
-- **三语技术文档**：插件包 `plugin/dsh-client-ui-multi-wall/` 下提供 `README.md`（英文）、`README.zh.md`（中文）与 `README.i18n.yaml`（双语一致性记录），结构与官方 `packages/client/*` 插件一致。
+- **双语技术文档**：本仓库在根目录提供 `README.md`（英文）和 `README.zh.md`（中文），与官方 `packages/client/*` 插件的双语惯例一致。
 - **纯增量、不碰核心**：只注册 `conversation.view` / `sidebar.footer.action` 两个列表槽位 + `/multi/api/*` 只读路由，不改动任何官方核心逻辑。
 
-## 在官方 monorepo 中的位置
+## 从源码构建
 
-`packages/client/ui-multi-wall` 是遵循官方 client 插件规范的包（tsconfig host/client 分离、tsdown clientBundle、locales zh/en、invariant 伴随、HMR 安全测试），并已接入 `packages/bundle/web-app` 的 dsh.client roster 与 `tsconfig.client.json` 聚合。构建：
+单包结构使用 `tsdown` 进行打包，`tsc` 生成类型声明：
 
 ```bash
-cd harness-src
-pnpm install
-pnpm --filter @deepseek-ai/dsh-client-ui-multi-wall bundle   # 产出 lib/client.js
-npx vitest run packages/client/ui-multi-wall                 # 14 项测试
+npm install
+npm run build          # tsc + tsdown → lib/
+npx vitest run         # 测试
 ```
+
+开发时可借助 `harness-src/` 目录（完整 DSH 源码）作为构建和参考工作区。
 
 ## License
 

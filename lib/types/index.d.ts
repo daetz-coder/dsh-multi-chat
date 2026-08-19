@@ -7,7 +7,6 @@
  * @module @deepseek-ai/dsh-client-ui-multi-wall
  */
 import type { Context } from '@deepseek-ai/cordis';
-import z from '@deepseek-ai/schemastery';
 /** Stable Cordis plugin name. */
 export declare const name = "client-ui-multi-wall";
 /** Services required before the probe routes can be registered. */
@@ -38,21 +37,7 @@ export interface MultiWallConfig {
     gatewayToken?: string;
 }
 /** Schema-validated config (the Loader resolves defaults for absent keys). */
-export declare const Config: z<Schemastery.ObjectS<{
-    scanFrom: z<number, number>;
-    scanTo: z<number, number>;
-    ports: z<number[], number[]>;
-    publicUrl: z<string, string>;
-    gatewayPort: z<number, number>;
-    gatewayToken: z<string, string>;
-}>, Schemastery.ObjectT<{
-    scanFrom: z<number, number>;
-    scanTo: z<number, number>;
-    ports: z<number[], number[]>;
-    publicUrl: z<string, string>;
-    gatewayPort: z<number, number>;
-    gatewayToken: z<string, string>;
-}>>;
+export declare const Config: any;
 /** One stop result row from /multi/api/stop. */
 export interface StopRow {
     port: number;

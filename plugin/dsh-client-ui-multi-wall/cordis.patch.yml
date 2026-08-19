@@ -1,7 +1,0 @@
-# dsh-client-ui-multi-wall bundle patch — append the multi-window wall loader
-# entry to the profile's root entry list. As a `dsh.bundle` layer this patch is
-# applied automatically by DSH when the package is installed into a profile
-# (`dsh plugin --profile web add <pkg>`); no manual profile patch is required.
-- insert:
-    - id: ui-multi-wall
-      name: '@deepseek-ai/dsh-client-ui-multi-wall'

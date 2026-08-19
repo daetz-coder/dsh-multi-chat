@@ -29,7 +29,6 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const STATE_FILE = join(ROOT, '.wall-pids.json')
-const PLUGIN_DIR = join(ROOT, 'plugin', 'dsh-client-ui-multi-wall')
 
 // Node ≥22 warns about spawn(shell:true, args[]) (DEP0190). The args here are
 // fixed strings we control (numeric ports, our own paths), so the warning is
@@ -123,11 +122,11 @@ const INSTALL_HELP = `dsh-multi-chat install — install the multi-window wall p
 Usage:
   dsh-multi-chat install [--profile web]
 
-Packs plugin/dsh-client-ui-multi-wall and installs the tarball into the profile
-with \`dsh plugin --profile <p> add\`. The plugin declares \`dsh.bundle.patch\`
+Packs the dsh-multi-chat package and installs the tarball into the profile
+with \`dsh plugin --profile <p> add\`. The package declares \`dsh.bundle.patch\`
 (pointing at its own cordis.patch.yml), so DSH mounts it automatically as a
 bundle layer — no manual profile patch is needed. Restart dsh web afterwards.
-Uninstall with: dsh plugin --profile <p> remove @deepseek-ai/dsh-client-ui-multi-wall
+Uninstall with: dsh plugin --profile <p> remove dsh-multi-chat
 `
 
 async function cmdInstall(args) {
@@ -137,17 +136,14 @@ async function cmdInstall(args) {
     else if (args[i] === '--help') { process.stdout.write(INSTALL_HELP); return }
     else throw new Error(`unknown install option: ${args[i]}`)
   }
-  if (!existsSync(PLUGIN_DIR)) {
-    throw new Error(`plugin directory not found: ${PLUGIN_DIR} — run from the dsh-multi-chat package root`)
-  }
 
-  // 1) pack the plugin tarball into a STABLE location under DSH home. The
+  // 1) pack the tarball into a STABLE location under DSH home. The
   // profile records a `file:` dependency on the tarball, so a temp directory
   // (deleted after install) would break every later `dsh plugin add` — the
   // tarball must outlive the CLI run. (npm pack is offline-safe.)
   const stableDir = join(dshHome(), 'profiles', profile, 'plugins')
   mkdirSync(stableDir, { recursive: true })
-  const packOut = run('npm', ['pack', '--pack-destination', stableDir], { cwd: PLUGIN_DIR })
+  const packOut = run('npm', ['pack', '--pack-destination', stableDir], { cwd: ROOT })
   const tarballName = packOut.trim().split(/\r?\n/).pop()
   const tarball = join(stableDir, tarballName)
   if (!existsSync(tarball)) throw new Error('npm pack produced no tarball')
