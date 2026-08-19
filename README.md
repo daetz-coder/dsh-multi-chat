@@ -192,10 +192,42 @@ The single-package layout uses `tsdown` for bundling and `tsc` for type declarat
 ```bash
 npm install
 npm run build          # tsc + tsdown → lib/
-npx vitest run         # tests
+npm test               # vitest (browser half in jsdom + node half)
 ```
 
-For development against the official harness, the `harness-src/` directory is a full DSH checkout used as the build/reference workspace.
+## Testing
+
+The unit suite (`tests/browser-plugin.client.spec.tsx`, 20 specs) exercises the
+browser half (view-ring entry, sidebar shortcut, wall store, recursion guard,
+HMR disposal) against a real cordis Context in jsdom, plus the node half
+(probe routes, config schema, stop semantics).
+
+The specs import `@deepseek-ai/*` platform packages whose published versions
+lag the snapshot this plugin was written against, so tests resolve them to the
+**vendored harness sources** in `harness-src/` instead of npm:
+
+1. First install the vendored workspace once (it is a full DSH checkout):
+   ```bash
+   cd harness-src && pnpm install && cd ..
+   ```
+2. `tsconfig.vitest.json` carries the workspace's `tsconfig.base.json` paths
+   map (rewritten with a `harness-src/` prefix) so every `@deepseek-ai/*`
+   import resolves to sources — never to unbuilt `lib/` outputs. Regenerate it
+   after updating the vendored checkout:
+   ```bash
+   node scripts/sync-vitest-paths.mjs
+   ```
+3. `vitest.config.ts` feeds that map to `vite-tsconfig-paths` and dedupes
+   `react`/`react-dom` so the component specs and `@testing-library/react`
+   share one React instance. Then:
+
+   ```bash
+   npm test
+   ```
+
+> `npm run build`'s `tsc` step resolves `@deepseek-ai/*` types from the
+> installed workspace (or from npm-installed versions on a machine with the
+> matching snapshot); the committed `lib/` is the reference output.
 
 ## License
 
