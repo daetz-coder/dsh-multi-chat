@@ -4,7 +4,7 @@
  * which local ports are live DSH instances, to poll liveness, and to
  * terminate a chosen instance (`/multi/api/stop`). The wall itself is pure
  * UI — this half answers a few small JSON requests.
- * @module @deepseek-ai/dsh-client-ui-multi-wall
+ * @module dsh-multi-chat
  */
 
 import { execFile, spawn } from 'node:child_process'
@@ -17,7 +17,7 @@ import type {} from '@deepseek-ai/dsh-host-webserver'
 import { startGateway, type GatewayHandle } from './gateway'
 
 /** Stable Cordis plugin name. */
-export const name = 'client-ui-multi-wall'
+export const name = 'dsh-multi-chat'
 
 /** Services required before the probe routes can be registered. */
 export const inject = ['webServer']

@@ -1,11 +1,10 @@
 /**
- * Package-owned invariant companion for
- * `@deepseek-ai/dsh-client-ui-multi-wall`.
- * @module @deepseek-ai/dsh-client-ui-multi-wall/invariant
+ * Package-owned invariant companion for `dsh-multi-chat`.
+ * @module dsh-multi-chat/invariant
  */
 import type { Context } from '@deepseek-ai/cordis';
 /** Cordis companion plugin name. */
-export declare const name = "client-ui-multi-wall-invariant";
+export declare const name = "dsh-multi-chat-invariant";
 /** Service required before the companion can reserve package ownership. */
 export declare const inject: string[];
 /**

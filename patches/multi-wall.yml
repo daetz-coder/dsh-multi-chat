@@ -7,4 +7,4 @@
 #   dsh plugin --profile web add <path-to-tarball-or-git-url>
 - insert:
     - id: ui-multi-wall
-      name: '@deepseek-ai/dsh-client-ui-multi-wall'
+      name: dsh-multi-chat

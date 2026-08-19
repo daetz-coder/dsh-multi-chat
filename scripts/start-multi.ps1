@@ -5,7 +5,7 @@
 
 .DESCRIPTION
   依次启动 `dsh web --port <n>`（默认 3080..3083 共 4 个实例）。每个实例的
-  侧边栏底部都有「多窗口墙」按钮（安装 plugin/dsh-client-ui-multi-wall 后），
+  侧边栏底部都有「多窗口墙」按钮（安装 dsh-multi-chat 后），
   点击即可在官方界面内看到所有实例并排显示。所有子进程 PID 记录到状态文件，
   供 stop-multi.ps1 一键停止。
 
