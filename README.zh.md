@@ -150,6 +150,11 @@ dsh plugin --profile web remove dsh-multi-chat
 > 它从 profile 移除依赖，DSH 会自动把它从 `dsh.profile.bundles` 层栈里剔除
 > （层栈按已安装依赖实时调和，详见 `dsh plugin --help`）。之后重启 `dsh web` 卸载生效。
 
+> **pnpm ≥ 11 注意**：pnpm 11 的 `minimumReleaseAge` 供应链保护会跳过刚发布的版本
+> （例如几分钟前才发布的插件），静默回退到最新的「已过成熟期」版本。如果
+> `dsh plugin --profile web add dsh-multi-chat` 装到的版本比最新版旧，请在
+> `~/.dsh/profiles/web/pnpm-workspace.yaml` 里加上 `minimumReleaseAge: 0` 后重试。
+
 仓库还内置了一个跨平台 CLI `dsh-multi-chat`（`bin/dsh-multi-chat.mjs`）。它的 `install` 命令会探测 `$DSH_HOME`（缺省 `~/.dsh`），把包打包进 profile 的 `plugins/` 目录，再执行 `dsh plugin --profile web add <tarball>`（与 `install-plugin.ps1` 行为一致）。
 
 ### 渠道一：npm / npx（推荐，最省事）

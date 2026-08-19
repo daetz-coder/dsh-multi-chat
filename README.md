@@ -152,6 +152,13 @@ Open that URL on your phone and enter the token to reach the full DSH UI. The ga
 > (reconciled from the installed dependency set — see `dsh plugin --help`).
 > Restart `dsh web` afterwards to unload the wall.
 
+> **pnpm ≥ 11 gotcha**: pnpm 11's `minimumReleaseAge` supply-chain guard skips
+> freshly published versions (e.g. a plugin published minutes ago) and silently
+> installs the newest "aged" release instead. If `dsh plugin --profile web add
+> dsh-multi-chat` reports an older version than the latest, add
+> `minimumReleaseAge: 0` to the profile's
+> `~/.dsh/profiles/web/pnpm-workspace.yaml` and re-run the add.
+
 The repo also bundles a cross-platform CLI, `dsh-multi-chat` (`bin/dsh-multi-chat.mjs`). Its `install` command probes `$DSH_HOME` (default `~/.dsh`), packs the package into the profile's `plugins/` folder, and runs `dsh plugin --profile web add <tarball>` (same behavior as `install-plugin.ps1`).
 
 ### Channel 1: npm / npx (recommended, easiest)
