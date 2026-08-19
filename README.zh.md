@@ -48,13 +48,16 @@
 ## 🚀 30 秒上手
 
 ```bash
-# 1. 安装（npm / npx，免手工打包补丁）
+# 1. 安装 —— 从 npm 官方源一条命令搞定（无需下载任何 CLI）：
+dsh plugin --profile web add dsh-multi-chat
+
+#    ……或通过插件自带的 npx CLI（先打包再安装）：
 npx dsh-multi-chat install
 
 # 2. 启动几个实例
 npx dsh-multi-chat start --ports 3080,3081,3082
 
-# 3. 打开任意实例，点侧边栏底部「多窗口」→ 完成 🎉
+# 3.（重新）打开任意实例，点侧边栏底部「多窗口」→ 完成 🎉
 ```
 
 ## 为什么这样做
@@ -94,11 +97,11 @@ dsh web --port 3084
 或手动：
 
 ```bash
-npm pack                                                  # 得到 tarball (dsh-multi-chat-1.0.0.tgz)
-dsh plugin --profile web add dsh-multi-chat-1.0.0.tgz     # DSH 自动把包加入 bundle 层栈
+npm pack                                                  # 得到 tarball (dsh-multi-chat-1.0.1.tgz)
+dsh plugin --profile web add dsh-multi-chat-1.0.1.tgz     # DSH 自动把包加入 bundle 层栈
 ```
 
-卸载（一条命令，无需手动清理任何文件）：
+卸载（一条命令，无需手动清理任何文件 —— 重启 `dsh web` 后生效）：
 
 ```bash
 dsh plugin --profile web remove dsh-multi-chat
@@ -131,27 +134,47 @@ dsh plugin --profile web remove dsh-multi-chat
 
 ## 分发与安装
 
-仓库内置跨平台 CLI `dsh-multi-chat`（`bin/dsh-multi-chat.mjs`），下面三种渠道都可安装。CLI 的 `install` 会探测 `$DSH_HOME`（缺省 `~/.dsh`）并幂等地追加启用 patch（与 `install-plugin.ps1` 行为一致）。
+`dsh-multi-chat` 已发布到 npm（无作用域公开包），并在 GitHub 按 tag 发布 Release（源码 zip/tarball）。下面每条渠道殊途同归：包成为 web profile 的依赖 → DSH 自动调和进 bundle 层栈（包声明了 `dsh.bundle.patch`，自带 `cordis.patch.yml` 自动挂载，无需手改任何文件）→ 重启 `dsh web` 生效。
+
+### 安装 / 卸载速查表
+
+| 渠道 | 安装 | 卸载 |
+|------|------|------|
+| **一条命令（npm 官方源）** | `dsh plugin --profile web add dsh-multi-chat` | `dsh plugin --profile web remove dsh-multi-chat` |
+| **npx（免下载）** | `npx dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` |
+| **全局 CLI（npm）** | `npm i -g dsh-multi-chat` 然后 `dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` 然后 `npm rm -g dsh-multi-chat` |
+| **Tarball（离线）** | `npm pack` → `dsh plugin --profile web add ./dsh-multi-chat-1.0.1.tgz` | `dsh plugin --profile web remove dsh-multi-chat` |
+| **Git clone** | `node bin/dsh-multi-chat.mjs install` | `dsh plugin --profile web remove dsh-multi-chat` |
+
+> `dsh plugin --profile web remove dsh-multi-chat` 是**所有渠道统一的卸载命令**：
+> 它从 profile 移除依赖，DSH 会自动把它从 `dsh.profile.bundles` 层栈里剔除
+> （层栈按已安装依赖实时调和，详见 `dsh plugin --help`）。之后重启 `dsh web` 卸载生效。
+
+仓库还内置了一个跨平台 CLI `dsh-multi-chat`（`bin/dsh-multi-chat.mjs`）。它的 `install` 命令会探测 `$DSH_HOME`（缺省 `~/.dsh`），把包打包进 profile 的 `plugins/` 目录，再执行 `dsh plugin --profile web add <tarball>`（与 `install-plugin.ps1` 行为一致）。
 
 ### 渠道一：npm / npx（推荐，最省事）
 
 ```bash
-# 发布到 npm 后，任意机器一句话安装
+# 已发布到 npm —— 任意机器一句话安装（需 node + pnpm）
 npx dsh-multi-chat install
 
-# 或直接 npx 跑单条命令（无需安装）
+# 或全局装 CLI，再从任意目录安装插件
+npm i -g dsh-multi-chat
+dsh-multi-chat install
+
+# 或直接用 npx 跑单条命令（无需安装插件）
 npx dsh-multi-chat start --remote --token <口令> --ports 3080,3081
 npx dsh-multi-chat gateway --target 127.0.0.1:3080 --token <口令>
 ```
 
-维护者发布：`npm publish`（无作用域公开包 `dsh-multi-chat`）。
+维护者发布/再发布：`npm publish`（无作用域公开包 `dsh-multi-chat`）。
 
 ### 渠道二：GitHub Release
 
 从 [Releases](https://github.com/daetz-coder/dsh-multi-chat/releases) 下载源码 zip/tarball，解压后进目录：
 
 ```bash
-node bin/dsh-multi-chat.mjs install           # 打包 + dsh plugin add + 追加启用 patch
+node bin/dsh-multi-chat.mjs install           # 打包 + dsh plugin add（见速查表）
 node bin/dsh-multi-chat.mjs start --ports 3080,3081
 ```
 
@@ -163,10 +186,12 @@ node bin/dsh-multi-chat.mjs start --ports 3080,3081
 git clone https://github.com/daetz-coder/dsh-multi-chat.git
 cd dsh-multi-chat
 
-node bin/dsh-multi-chat.mjs install           # 装插件
+node bin/dsh-multi-chat.mjs install           # 打包 + dsh plugin add（见速查表）
 node bin/dsh-multi-chat.mjs start --ports 3080,3081
 node bin/dsh-multi-chat.mjs gateway --target 127.0.0.1:3080 --token <口令>
 ```
+
+> 在 git clone 出来的仓库里也可以直接走一条命令：`dsh plugin --profile web add dsh-multi-chat` —— 直接从已发布版本安装，无需自己打包。
 
 ### 本仓库直接运行（开发）
 

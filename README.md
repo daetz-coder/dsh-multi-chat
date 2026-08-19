@@ -48,13 +48,16 @@ Install a **multi-window wall** into the official [DeepSeek Harness (DSH)](https
 ## 🚀 30-second quick start
 
 ```bash
-# 1. Install (npm / npx, no manual patch needed)
+# 1. Install — ONE command straight from the npm registry (no CLI to download):
+dsh plugin --profile web add dsh-multi-chat
+
+#    …or via the plugin's own npx CLI (packs a tarball and installs it):
 npx dsh-multi-chat install
 
 # 2. Start a few instances
 npx dsh-multi-chat start --ports 3080,3081,3082
 
-# 3. Open any instance and click "Multi-window" in the sidebar footer → done 🎉
+# 3. (Re)start any instance and click "Multi-window" in the sidebar footer → done 🎉
 ```
 
 ## Why this approach
@@ -94,11 +97,11 @@ dsh web --port 3084
 Or manual:
 
 ```bash
-npm pack                                                  # produce a tarball (dsh-multi-chat-1.0.0.tgz)
-dsh plugin --profile web add dsh-multi-chat-1.0.0.tgz     # DSH adds the package to the bundle layer stack automatically
+npm pack                                                  # produce a tarball (dsh-multi-chat-1.0.1.tgz)
+dsh plugin --profile web add dsh-multi-chat-1.0.1.tgz     # DSH adds the package to the bundle layer stack automatically
 ```
 
-Uninstall (one command, nothing manual to clean up):
+Uninstall (one command, nothing manual to clean up — restart `dsh web` to unload it):
 
 ```bash
 dsh plugin --profile web remove dsh-multi-chat
@@ -131,27 +134,49 @@ Open that URL on your phone and enter the token to reach the full DSH UI. The ga
 
 ## Distribution & install
 
-The repo bundles a cross-platform CLI, `dsh-multi-chat` (`bin/dsh-multi-chat.mjs`), installable through any of the three channels below. Its `install` command probes `$DSH_HOME` (default `~/.dsh`) and idempotently appends the enable patch (same behavior as `install-plugin.ps1`).
+`dsh-multi-chat` is published to npm (unscoped public package) and released on GitHub (source zip/tarball per tag). Every channel below ends in the same three things: the package lands as a dependency of the web profile, DSH reconciles it into the bundle layer stack (the package declares `dsh.bundle.patch`, so its own `cordis.patch.yml` is mounted automatically — no manual patch edits), and a `dsh web` restart loads the wall.
+
+### Install / uninstall cheat-sheet
+
+| Channel | Install | Uninstall |
+|---------|---------|-----------|
+| **One-command (registry)** | `dsh plugin --profile web add dsh-multi-chat` | `dsh plugin --profile web remove dsh-multi-chat` |
+| **npx (no download)** | `npx dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` |
+| **Global CLI (npm)** | `npm i -g dsh-multi-chat` then `dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` then `npm rm -g dsh-multi-chat` |
+| **Tarball (offline)** | `npm pack` → `dsh plugin --profile web add ./dsh-multi-chat-1.0.1.tgz` | `dsh plugin --profile web remove dsh-multi-chat` |
+| **Git clone** | `node bin/dsh-multi-chat.mjs install` | `dsh plugin --profile web remove dsh-multi-chat` |
+
+> `dsh plugin --profile web remove dsh-multi-chat` is the **single uninstall
+> command for every channel**: it removes the dependency from the profile, and
+> DSH strips it from the `dsh.profile.bundles` layer stack automatically
+> (reconciled from the installed dependency set — see `dsh plugin --help`).
+> Restart `dsh web` afterwards to unload the wall.
+
+The repo also bundles a cross-platform CLI, `dsh-multi-chat` (`bin/dsh-multi-chat.mjs`). Its `install` command probes `$DSH_HOME` (default `~/.dsh`), packs the package into the profile's `plugins/` folder, and runs `dsh plugin --profile web add <tarball>` (same behavior as `install-plugin.ps1`).
 
 ### Channel 1: npm / npx (recommended, easiest)
 
 ```bash
-# After publishing to npm, one line installs on any machine
+# Published on npm — one line installs on any machine (node + pnpm required)
 npx dsh-multi-chat install
 
-# Or run a single command straight from npx (no install needed)
+# Or install the CLI globally, then install the plugin from anywhere
+npm i -g dsh-multi-chat
+dsh-multi-chat install
+
+# Or run single commands straight from npx (no plugin install needed)
 npx dsh-multi-chat start --remote --token <token> --ports 3080,3081
 npx dsh-multi-chat gateway --target 127.0.0.1:3080 --token <token>
 ```
 
-Publishing (maintainer): `npm publish` (unscoped public package `dsh-multi-chat`).
+Maintaining / republishing (maintainer): `npm publish` (unscoped public package `dsh-multi-chat`).
 
 ### Channel 2: GitHub Release
 
 Download the source zip/tarball from [Releases](https://github.com/daetz-coder/dsh-multi-chat/releases), unpack it, and cd in:
 
 ```bash
-node bin/dsh-multi-chat.mjs install           # pack + dsh plugin add + append enable patch
+node bin/dsh-multi-chat.mjs install           # pack + dsh plugin add (see cheat-sheet)
 node bin/dsh-multi-chat.mjs start --ports 3080,3081
 ```
 
@@ -163,10 +188,12 @@ node bin/dsh-multi-chat.mjs start --ports 3080,3081
 git clone https://github.com/daetz-coder/dsh-multi-chat.git
 cd dsh-multi-chat
 
-node bin/dsh-multi-chat.mjs install           # install the plugin
+node bin/dsh-multi-chat.mjs install           # pack + dsh plugin add (see cheat-sheet)
 node bin/dsh-multi-chat.mjs start --ports 3080,3081
 node bin/dsh-multi-chat.mjs gateway --target 127.0.0.1:3080 --token <token>
 ```
+
+> For the one-command-on-this-machine flow, `dsh plugin --profile web add dsh-multi-chat` also works straight from a git clone — install the plugin _from_ the repo checkout without packaging it yourself.
 
 ### Running straight from this repo (development)
 
