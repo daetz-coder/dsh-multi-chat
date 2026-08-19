@@ -97,8 +97,8 @@ dsh web --port 3084
 或手动：
 
 ```bash
-npm pack                                                  # 得到 tarball (dsh-multi-chat-1.0.1.tgz)
-dsh plugin --profile web add dsh-multi-chat-1.0.1.tgz     # DSH 自动把包加入 bundle 层栈
+npm pack                                                  # 得到 tarball (dsh-multi-chat-1.0.3.tgz)
+dsh plugin --profile web add dsh-multi-chat-1.0.3.tgz     # DSH 自动把包加入 bundle 层栈
 ```
 
 卸载（一条命令，无需手动清理任何文件 —— 重启 `dsh web` 后生效）：
@@ -143,7 +143,7 @@ dsh plugin --profile web remove dsh-multi-chat
 | **一条命令（npm 官方源）** | `dsh plugin --profile web add dsh-multi-chat` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **npx（免下载）** | `npx dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **全局 CLI（npm）** | `npm i -g dsh-multi-chat` 然后 `dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` 然后 `npm rm -g dsh-multi-chat` |
-| **Tarball（离线）** | `npm pack` → `dsh plugin --profile web add ./dsh-multi-chat-1.0.1.tgz` | `dsh plugin --profile web remove dsh-multi-chat` |
+| **Tarball（离线）** | `npm pack` → `dsh plugin --profile web add ./dsh-multi-chat-1.0.3.tgz` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **Git clone** | `node bin/dsh-multi-chat.mjs install` | `dsh plugin --profile web remove dsh-multi-chat` |
 
 > `dsh plugin --profile web remove dsh-multi-chat` 是**所有渠道统一的卸载命令**：
@@ -151,9 +151,10 @@ dsh plugin --profile web remove dsh-multi-chat
 > （层栈按已安装依赖实时调和，详见 `dsh plugin --help`）。之后重启 `dsh web` 卸载生效。
 
 > **pnpm ≥ 11 注意**：pnpm 11 的 `minimumReleaseAge` 供应链保护会跳过刚发布的版本
-> （例如几分钟前才发布的插件），静默回退到最新的「已过成熟期」版本。如果
+> （默认阈值 1 天），静默回退到最新的「已过成熟期」版本。如果
 > `dsh plugin --profile web add dsh-multi-chat` 装到的版本比最新版旧，请在
 > `~/.dsh/profiles/web/pnpm-workspace.yaml` 里加上 `minimumReleaseAge: 0` 后重试。
+> 自带 CLI（`npx dsh-multi-chat install`）会在安装时自动写入该设置。
 
 仓库还内置了一个跨平台 CLI `dsh-multi-chat`（`bin/dsh-multi-chat.mjs`）。它的 `install` 命令会探测 `$DSH_HOME`（缺省 `~/.dsh`），把包打包进 profile 的 `plugins/` 目录，再执行 `dsh plugin --profile web add <tarball>`（与 `install-plugin.ps1` 行为一致）。
 

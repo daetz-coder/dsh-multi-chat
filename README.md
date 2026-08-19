@@ -97,8 +97,8 @@ dsh web --port 3084
 Or manual:
 
 ```bash
-npm pack                                                  # produce a tarball (dsh-multi-chat-1.0.1.tgz)
-dsh plugin --profile web add dsh-multi-chat-1.0.1.tgz     # DSH adds the package to the bundle layer stack automatically
+npm pack                                                  # produce a tarball (dsh-multi-chat-1.0.3.tgz)
+dsh plugin --profile web add dsh-multi-chat-1.0.3.tgz     # DSH adds the package to the bundle layer stack automatically
 ```
 
 Uninstall (one command, nothing manual to clean up — restart `dsh web` to unload it):
@@ -143,7 +143,7 @@ Open that URL on your phone and enter the token to reach the full DSH UI. The ga
 | **One-command (registry)** | `dsh plugin --profile web add dsh-multi-chat` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **npx (no download)** | `npx dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **Global CLI (npm)** | `npm i -g dsh-multi-chat` then `dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` then `npm rm -g dsh-multi-chat` |
-| **Tarball (offline)** | `npm pack` → `dsh plugin --profile web add ./dsh-multi-chat-1.0.1.tgz` | `dsh plugin --profile web remove dsh-multi-chat` |
+| **Tarball (offline)** | `npm pack` → `dsh plugin --profile web add ./dsh-multi-chat-1.0.3.tgz` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **Git clone** | `node bin/dsh-multi-chat.mjs install` | `dsh plugin --profile web remove dsh-multi-chat` |
 
 > `dsh plugin --profile web remove dsh-multi-chat` is the **single uninstall
@@ -153,11 +153,12 @@ Open that URL on your phone and enter the token to reach the full DSH UI. The ga
 > Restart `dsh web` afterwards to unload the wall.
 
 > **pnpm ≥ 11 gotcha**: pnpm 11's `minimumReleaseAge` supply-chain guard skips
-> freshly published versions (e.g. a plugin published minutes ago) and silently
-> installs the newest "aged" release instead. If `dsh plugin --profile web add
+> freshly published versions (default cutoff: 1 day) and silently installs the
+> newest "aged" release instead. If `dsh plugin --profile web add
 > dsh-multi-chat` reports an older version than the latest, add
 > `minimumReleaseAge: 0` to the profile's
-> `~/.dsh/profiles/web/pnpm-workspace.yaml` and re-run the add.
+> `~/.dsh/profiles/web/pnpm-workspace.yaml` and re-run the add. The bundled CLI
+> (`npx dsh-multi-chat install`) writes that setting for you automatically.
 
 The repo also bundles a cross-platform CLI, `dsh-multi-chat` (`bin/dsh-multi-chat.mjs`). Its `install` command probes `$DSH_HOME` (default `~/.dsh`), packs the package into the profile's `plugins/` folder, and runs `dsh plugin --profile web add <tarball>` (same behavior as `install-plugin.ps1`).
 

@@ -126,8 +126,33 @@ Packs the dsh-multi-chat package and installs the tarball into the profile
 with \`dsh plugin --profile <p> add\`. The package declares \`dsh.bundle.patch\`
 (pointing at its own cordis.patch.yml), so DSH mounts it automatically as a
 bundle layer — no manual profile patch is needed. Restart dsh web afterwards.
+
+The install also writes \`minimumReleaseAge: 0\` into the profile's
+pnpm-workspace.yaml (only if no explicit value is set): pnpm ≥ 11 filters
+freshly published versions by default (1 day), which would otherwise make
+\`dsh plugin --profile web add dsh-multi-chat\` silently fall back to an older
+release. With the gate disabled, every registry install resolves the newest.
+
 Uninstall with: dsh plugin --profile <p> remove dsh-multi-chat
 `
+
+/**
+ * Ensure the profile's pnpm-workspace.yaml disables pnpm ≥ 11's
+ * minimumReleaseAge gate (default 1 day), so registry installs like
+ * `dsh plugin --profile web add dsh-multi-chat` always resolve the newest
+ * release instead of silently falling back to an older one. Respects an
+ * explicit user-set value; only writes when the key is absent.
+ */
+function ensureFreshReleasePolicy(profileDir) {
+  const wsFile = join(profileDir, 'pnpm-workspace.yaml')
+  const existing = existsSync(wsFile) ? readFileSync(wsFile, 'utf8') : null
+  if (existing !== null && /^\s*minimumReleaseAge\s*:/m.test(existing)) {
+    return false
+  }
+  const anchor = '\n# dsh-multi-chat: disable pnpm minimumReleaseAge so `dsh plugin add` always resolves the newest release\nminimumReleaseAge: 0\n'
+  writeFileSync(wsFile, `${existing ?? 'packages:\n  - .\n'}${anchor}`, 'utf8')
+  return true
+}
 
 async function cmdInstall(args) {
   let profile = 'web'
@@ -154,6 +179,14 @@ async function cmdInstall(args) {
   // cordis.patch.yml is mounted automatically — no manual profile patch edits.
   process.stdout.write(`installing ${tarballName} into profile '${profile}'…\n`)
   run('dsh', ['plugin', '--profile', profile, 'add', tarball])
+
+  // 3) disable pnpm's release-age gate for this profile so the registry
+  // one-liner (`dsh plugin --profile web add dsh-multi-chat`) — and every
+  // later add/update — resolves the newest version, not a stale fallback.
+  const profileDir = join(dshHome(), 'profiles', profile)
+  if (ensureFreshReleasePolicy(profileDir)) {
+    process.stdout.write(`disabled pnpm minimumReleaseAge in ${join(profileDir, 'pnpm-workspace.yaml')} — future registry installs resolve the newest version\n`)
+  }
 
   process.stdout.write('\nDone. Restart dsh web to load the wall:\n')
   process.stdout.write('  dsh web --port <n>\n')
