@@ -7,26 +7,21 @@
  */
 import { defineConfig } from 'tsdown'
 import { transform } from 'lightningcss'
+import { readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('.', import.meta.url))
 
-// DSH client externals - resolved by loader module table at runtime
-const CLIENT_EXTERNALS = [
-  'react',
-  'react/jsx-runtime',
-  'react-dom',
-  'react-dom/client',
-  '@deepseek-ai/cordis',
-  '@deepseek-ai/dsh-client-ui-slots',
-  '@deepseek-ai/dsh-client-web-react',
-  '@deepseek-ai/dsh-client-ui-primitives',
-  '@deepseek-ai/dsh-client-ui-attachment',
-  '@deepseek-ai/dsh-client-schema-form',
-  '@deepseek-ai/dsh-client-runtime/client',
-]
+// DSH client externals - the platform seed table, resolved by the loader's
+// module table at runtime. Single source of truth: platform-seeds.json, which
+// scripts/check-platform-contract.mjs also reads, so the build config and the
+// post-build guard can never disagree. A specifier that is not a seed word is
+// not reachable from a plugin bundle at all.
+const CLIENT_EXTERNALS: string[] = JSON.parse(
+  readFileSync(new URL('./platform-seeds.json', import.meta.url), 'utf8'),
+).seeds
 
 function browserSourcePath(source: string, sourcemapPath: string): string {
   if (!source.startsWith('.')) return source

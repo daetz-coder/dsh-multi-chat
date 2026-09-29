@@ -9,9 +9,6 @@ node_modules/
 # Runtime state
 .wall-pids.json
 
-# Official source checkout (dev/build reference; owned by upstream git)
-harness-src/
-
 # OS
 Thumbs.db
 .DS_Store

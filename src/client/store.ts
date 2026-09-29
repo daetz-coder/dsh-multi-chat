@@ -5,7 +5,7 @@
  * is a `conversation.view` ring entry, so the active view (chat store's
  * `view` field) decides whether it renders.
  */
-import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-runtime/client'
+import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-store'
 
 /** Wall viewing state: displayed ports and grid columns. */
 export type WallState = {

@@ -12,7 +12,7 @@
  * own. The wall also never renders the port it is served on (SELF_PORT is
  * filtered at render time and by the node half's discovery).
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client';
+import type { Context as ClientContext } from '@deepseek-ai/cordis';
 import { type MultiWallKey } from './locales.ts';
 export { WallView } from './WallView.tsx';
 export type { WallViewProps } from './WallView.tsx';

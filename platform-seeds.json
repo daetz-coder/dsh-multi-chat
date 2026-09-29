@@ -1,0 +1,18 @@
+{
+  "$comment": "The DSH web shell's platform seed table — the complete set of module specifiers a client plugin bundle may require() at runtime. The shell hardcodes this table in its Vite bundle (search for `staticModules:` in dsh-web-frontend/dist/assets/index-*.js); it is the ONLY module surface a plugin can reach. Anything outside it must arrive as a boot-graph package row, which a plugin cannot conjure. Regenerate with `npm run sync:platform -- <path-to-installed-dsh>` when targeting a new DSH release.",
+  "verifiedAgainst": [
+    "0.1.5-rc.2",
+    "0.1.7-rc.1"
+  ],
+  "seeds": [
+    "react",
+    "react/jsx-runtime",
+    "react-dom",
+    "react-dom/client",
+    "@deepseek-ai/cordis",
+    "@deepseek-ai/dsh-client-store",
+    "@deepseek-ai/dsh-client-ui-slots",
+    "@deepseek-ai/dsh-client-ui-primitives",
+    "@deepseek-ai/dsh-client-ui-dockkit"
+  ]
+}

@@ -17,8 +17,8 @@
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
-  IconCloseOutline16, IconFullscreenOutline16, IconGlobeOutline14, IconPlusOutline16,
-  IconRefreshOutline14, IconRefreshOutline16, IconRightUpOutline16, IconStopFill16,
+  IconCloseOutlineRegular, IconFullscreenOutlineRegular, IconGlobeOutlineRegular, IconPlusOutlineRegular,
+  IconRefreshOutlineRegular, IconRightUpOutlineRegular, IconStopFillRegular,
   Button, Input, Menu, StateDot,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsStore, TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
@@ -88,17 +88,17 @@ function WallPane(props: {
         <span className={css.paneTitle}>127.0.0.1:{port}</span>
         <div className={css.paneActions}>
           <button type="button" className={css.action} title={t('zoom')} onClick={onZoom}>
-            <IconFullscreenOutline16 size={14} />
+            <IconFullscreenOutlineRegular size={14} />
           </button>
           <button type="button" className={css.action} title={t('reload')} onClick={(e) => {
             e.currentTarget.closest('section')?.querySelector('iframe')?.contentWindow?.location.reload()
           }}>
-            <IconRefreshOutline16 size={14} />
+            <IconRefreshOutlineRegular size={14} />
           </button>
           <button type="button" className={css.action} title={t('openTab')} onClick={() => {
             window.open(paneUrl(port), '_blank')
           }}>
-            <IconRightUpOutline16 size={14} />
+            <IconRightUpOutlineRegular size={14} />
           </button>
           <button
             type="button"
@@ -106,10 +106,10 @@ function WallPane(props: {
             title={t('stop')}
             onClick={onStop}
           >
-            {stopping ? t('stop.confirm') : <IconStopFill16 size={14} />}
+            {stopping ? t('stop.confirm') : <IconStopFillRegular size={14} />}
           </button>
           <button type="button" className={css.action} title={t('remove')} onClick={onRemove}>
-            <IconCloseOutline16 size={14} />
+            <IconCloseOutlineRegular size={14} />
           </button>
         </div>
       </div>
@@ -288,7 +288,7 @@ export function WallView({ useStore, actions, discover, probe, stop, create, lin
           <Button
             variant="toolbar"
             size="sm"
-            icon={<IconPlusOutline16 size={14} />}
+            icon={<IconPlusOutlineRegular size={14} />}
             disabled={creating}
             onClick={() => { void handleCreate() }}
           >
@@ -300,7 +300,7 @@ export function WallView({ useStore, actions, discover, probe, stop, create, lin
               <Button
                 variant="toolbar"
                 size="sm"
-                icon={<IconRightUpOutline16 size={14} />}
+                icon={<IconRightUpOutlineRegular size={14} />}
                 onClick={() => { setColsMenuOpen(true) }}
               >
                 {columns === 'auto' ? t('columns.auto') : columns}
@@ -321,7 +321,7 @@ export function WallView({ useStore, actions, discover, probe, stop, create, lin
           <Button
             variant="toolbar"
             size="sm"
-            icon={<IconRefreshOutline14 size={14} />}
+            icon={<IconRefreshOutlineRegular size={14} />}
             onClick={() => {
               document.querySelectorAll(`.${css.paneBody} iframe`).forEach(f => {
                 (f as HTMLIFrameElement).contentWindow?.location.reload()
@@ -334,7 +334,7 @@ export function WallView({ useStore, actions, discover, probe, stop, create, lin
           <Button
             variant="toolbar"
             size="sm"
-            icon={<IconGlobeOutline14 size={14} />}
+            icon={<IconGlobeOutlineRegular size={14} />}
             aria-label={t('link.aria')}
             onClick={() => { void handleLink() }}
           >
@@ -343,7 +343,7 @@ export function WallView({ useStore, actions, discover, probe, stop, create, lin
           <Button
             variant="toolbar"
             size="sm"
-            icon={<IconCloseOutline16 size={14} />}
+            icon={<IconCloseOutlineRegular size={14} />}
             aria-label={t('exit.aria')}
             title={t('exit')}
             onClick={() => { exitWall() }}
@@ -375,7 +375,7 @@ export function WallView({ useStore, actions, discover, probe, stop, create, lin
                 {t('link.unreachable').replace('{hint}', linkInfo.hint ?? '')}
               </span>
             )}
-          <Button variant="ghost" size="sm" icon={<IconCloseOutline16 size={14} />} onClick={() => { setLinkOpen(false) }}>
+          <Button variant="ghost" size="sm" icon={<IconCloseOutlineRegular size={14} />} onClick={() => { setLinkOpen(false) }}>
             {t('overlay.close')}
           </Button>
         </div>

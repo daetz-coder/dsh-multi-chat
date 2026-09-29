@@ -12,7 +12,7 @@
  * the user first opens or creates a session (the official flow), after which
  * the tab is present and the click lands.
  */
-import { IconFullscreenOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconFullscreenOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import css from './WallToggle.module.css'
 
@@ -45,7 +45,7 @@ export function WallToggle({ wide, t }: WallToggleProps) {
         tab?.click()
       }}
     >
-      <IconFullscreenOutline16 size={wide ? 16 : 18} />
+      <IconFullscreenOutlineRegular size={wide ? 16 : 18} />
       {wide && <span className={css.label}>{t('toggle')}</span>}
     </button>
   )

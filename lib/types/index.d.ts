@@ -38,21 +38,21 @@ export interface MultiWallConfig {
     gatewayToken?: string;
 }
 /** Schema-validated config (the Loader resolves defaults for absent keys). */
-export declare const Config: z<Schemastery.ObjectS<{
-    scanFrom: z<number, number>;
-    scanTo: z<number, number>;
-    ports: z<number[], number[]>;
-    publicUrl: z<string, string>;
-    gatewayPort: z<number, number>;
-    gatewayToken: z<string, string>;
-}>, Schemastery.ObjectT<{
-    scanFrom: z<number, number>;
-    scanTo: z<number, number>;
-    ports: z<number[], number[]>;
-    publicUrl: z<string, string>;
-    gatewayPort: z<number, number>;
-    gatewayToken: z<string, string>;
-}>>;
+export declare const Config: z<Schemastery.ObjectS<NoInfer<{
+    scanFrom: z<number, number, "defined">;
+    scanTo: z<number, number, "defined">;
+    ports: z<number[], number[], "defined">;
+    publicUrl: z<string, string, "defined">;
+    gatewayPort: z<number, number, "defined">;
+    gatewayToken: z<string, string, "defined">;
+}>>, Schemastery.ObjectT<NoInfer<{
+    scanFrom: z<number, number, "defined">;
+    scanTo: z<number, number, "defined">;
+    ports: z<number[], number[], "defined">;
+    publicUrl: z<string, string, "defined">;
+    gatewayPort: z<number, number, "defined">;
+    gatewayToken: z<string, string, "defined">;
+}>>, "plain">;
 /** One stop result row from /multi/api/stop. */
 export interface StopRow {
     port: number;

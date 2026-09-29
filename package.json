@@ -1,6 +1,6 @@
 {
   "name": "dsh-multi-chat",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "DSH 多窗口墙：在官方 DeepSeek Harness Web 界面里以多窗口网格并排运行、监控多个对话实例，一屏盯住所有 Agent 的实时进度；内置带口令认证的局域网网关，手机/平板也能看。",
   "license": "MIT",
   "type": "module",
@@ -28,11 +28,10 @@
     "client": {
       "platform": "web",
       "inject": [
-        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-renderer",
         "@deepseek-ai/dsh-client-locale",
         "@deepseek-ai/dsh-client-ui-layout",
-        "@deepseek-ai/dsh-client-ui-sidebar",
-        "@deepseek-ai/dsh-client-ui-primitives"
+        "@deepseek-ai/dsh-client-ui-sidebar"
       ]
     },
     "marketplace": {
@@ -80,29 +79,61 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -b tsconfig.json && tsdown",
+    "build": "tsc -b tsconfig.json && tsdown && npm run check:platform",
     "clean": "rm -rf lib",
-    "test": "vitest run"
+    "test": "npm run build && vitest run",
+    "check:platform": "node scripts/check-platform-contract.mjs",
+    "check:platform:against": "node scripts/check-platform-contract.mjs --against",
+    "sync:platform": "node scripts/check-platform-contract.mjs --sync"
   },
   "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.4",
+    "@deepseek-ai/dsh-client-locale": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-client-store": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-client-ui-layout": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-client-ui-sidebar": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-host-webserver": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-invariants": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-util-workspace-path": "0.1.7-rc.1",
+    "@deepseek-ai/schemastery": "3.18.4",
+    "@shikijs/langs": "^4.4.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^26.2.0",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
+    "anser": "^2.3.5",
+    "clsx": "^2.1.1",
+    "diff": "^9.0.0",
+    "immer": "^10.2.0",
     "jsdom": "^29.1.1",
+    "katex": "^0.18.9",
     "lightningcss": "^1.33.0",
+    "mdast-util-from-markdown": "^2.0.3",
+    "mdast-util-gfm": "^3.1.0",
+    "mdast-util-math": "^3.0.0",
+    "micromark-core-commonmark": "^2.0.4",
+    "micromark-extension-gfm": "^3.0.0",
+    "micromark-extension-math": "^3.1.0",
+    "micromark-factory-space": "^2.1.0",
+    "micromark-util-character": "^2.1.1",
+    "micromark-util-classify-character": "^2.0.1",
+    "micromark-util-sanitize-uri": "^2.0.1",
+    "micromark-util-symbol": "^2.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "shiki": "^4.4.3",
+    "simple-icons": "^16.33.0",
     "tsdown": "^0.11.13",
     "typescript": "^5.9.3",
-    "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^2.1.9"
+    "vitest": "^2.1.9",
+    "zustand": "^4.4.7"
   },
   "engines": {
     "node": ">=20"
-  },
-  "dependencies": {
-    "clsx": "^2.1.1"
   }
 }

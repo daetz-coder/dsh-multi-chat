@@ -79,7 +79,7 @@ dsh-multi-chat/                    # single-package structure
     start-multi.ps1 / stop-multi.ps1 # start/stop multiple dsh web instances
     gateway.mjs                    # token-authenticated reverse-proxy gateway (phone/remote)
   cordis.patch.yml                 # DSH bundle layer declaration
-  harness-src/                     # official deepseek-harness source (dev/build reference)
+  platform-seeds.json              # the DSH module-table contract this plugin builds against
 ```
 
 ## Install & enable (Windows)
@@ -232,37 +232,55 @@ npm test               # vitest (browser half in jsdom + node half)
 
 ## Testing
 
-The unit suite (`tests/browser-plugin.client.spec.tsx`, 20 specs) exercises the
-browser half (view-ring entry, sidebar shortcut, wall store, recursion guard,
-HMR disposal) against a real cordis Context in jsdom, plus the node half
-(probe routes, config schema, stop semantics).
+```bash
+npm test          # builds first, then runs vitest
+```
 
-The specs import `@deepseek-ai/*` platform packages whose published versions
-lag the snapshot this plugin was written against, so tests resolve them to the
-**vendored harness sources** in `harness-src/` instead of npm:
+`npm test` builds before it tests, so the suite always exercises the artifact
+that ships rather than a stale `lib/`.
 
-1. First install the vendored workspace once (it is a full DSH checkout):
-   ```bash
-   cd harness-src && pnpm install && cd ..
-   ```
-2. `tsconfig.vitest.json` carries the workspace's `tsconfig.base.json` paths
-   map (rewritten with a `harness-src/` prefix) so every `@deepseek-ai/*`
-   import resolves to sources — never to unbuilt `lib/` outputs. Regenerate it
-   after updating the vendored checkout:
-   ```bash
-   node scripts/sync-vitest-paths.mjs
-   ```
-3. `vitest.config.ts` feeds that map to `vite-tsconfig-paths` and dedupes
-   `react`/`react-dom` so the component specs and `@testing-library/react`
-   share one React instance. Then:
+- `tests/browser-plugin.client.spec.tsx` — the browser half (view-ring entry,
+  sidebar shortcut, wall store, recursion guard, HMR disposal) against a real
+  cordis Context in jsdom, plus the node half (probe routes, config schema,
+  stop semantics).
+- `tests/client-bundle.spec.ts` — loads the **built** `lib/client.js` through
+  `tests/dsh-module-loader.ts`, a stand-in for the web shell's module table.
+  This is the regression test for the v1.0.3 boot failure described below.
 
-   ```bash
-   npm test
-   ```
+## The platform contract
 
-> `npm run build`'s `tsc` step resolves `@deepseek-ai/*` types from the
-> installed workspace (or from npm-installed versions on a machine with the
-> matching snapshot); the committed `lib/` is the reference output.
+A client plugin bundle is **not** an ES module. The web shell loads it as a
+script whose only top-level effect is `window.__ModuleLoader__.load({ id,
+factory })`, and every `require(spec)` inside the factory resolves against the
+shell's module table. That table has exactly two sources:
+
+1. the platform **seed table** — a fixed set of specifiers the shell hardcodes
+   into its own Vite bundle, and
+2. **boot-graph package rows** — other plugins' bundles.
+
+A plugin cannot conjure another package's row, so requiring anything outside
+the seed table throws `missed the module table`. The boot is fail-closed: the
+whole web UI stops on its "Failed to load plugins" card.
+
+That is how v1.0.3 broke. It required `@deepseek-ai/dsh-client-runtime/client`,
+a package upstream deleted, and nothing in the build noticed — the types came
+from an unversioned local checkout of the harness monorepo, so the plugin
+compiled happily against a platform that no longer existed.
+
+`platform-seeds.json` pins the seed table, and is the single source of truth
+for both `tsdown.config.ts` (which specifiers to leave unresolved) and
+`scripts/check-platform-contract.mjs` (which fails the build if the bundle
+requires anything else):
+
+```bash
+npm run check:platform                                      # runs inside `npm run build`
+npm run check:platform:against -- <path-to-installed-dsh>   # diff against a real install
+npm run sync:platform -- <path-to-installed-dsh>            # adopt a new release's table
+```
+
+The `@deepseek-ai/*` platform packages are pinned as **exact** devDependencies,
+so the surface this plugin compiles against is versioned and reviewable instead
+of coming from a local checkout.
 
 ## License
 

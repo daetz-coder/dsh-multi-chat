@@ -12,7 +12,12 @@
  * own. The wall also never renders the port it is served on (SELF_PORT is
  * filtered at render time and by the node half's discovery).
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+// Type-only: pulls ctx.slots (the renderer-owned SlotRegistry service) into
+// this program. Must stay type-only — dsh-client-ui-renderer is a boot-graph
+// plugin package, not a platform seed word, so a value import would not
+// resolve inside the plugin bundle.
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 // Type-only: pulls the layout-owned slot declarations (sidebar footer,
 // shell.overlay) into this program.
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'

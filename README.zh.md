@@ -79,7 +79,7 @@ dsh-multi-chat/                    # 单包结构
     start-multi.ps1 / stop-multi.ps1 # 启停多个 dsh web 实例
     gateway.mjs                    # 带令牌认证的反向代理网关（手机/远程访问）
   cordis.patch.yml                 # DSH bundle 层声明
-  harness-src/                     # 官方 deepseek-harness 源码（开发/构建用）
+  platform-seeds.json              # 本插件构建所依据的 DSH 模块表契约
 ```
 
 ## 安装与启用（Windows）
@@ -222,11 +222,47 @@ node bin/dsh-multi-chat.mjs gateway --target 127.0.0.1:3080 --token <口令>
 
 ```bash
 npm install
-npm run build          # tsc + tsdown → lib/
-npx vitest run         # 测试
+npm run build          # tsc + tsdown → lib/，并跑平台契约守卫
+npm test               # 先构建，再跑 vitest
 ```
 
-开发时可借助 `harness-src/` 目录（完整 DSH 源码）作为构建和参考工作区。
+`npm test` 会先构建再测，保证测的始终是真正要发布的产物，而不是过期的 `lib/`。
+
+- `tests/browser-plugin.client.spec.tsx` —— 浏览器半边（视图环条目、侧边栏快捷入口、
+  墙 store、递归守卫、HMR 卸载）跑在 jsdom 里的真实 cordis Context 上，外加 node 半边
+  （探针路由、配置 schema、停止语义）。
+- `tests/client-bundle.spec.ts` —— 把**构建产物** `lib/client.js` 送进
+  `tests/dsh-module-loader.ts`（web shell 模块表的替身）加载，是 v1.0.3 启动失败
+  的回归测试。
+
+## 平台契约
+
+客户端插件 bundle **不是** ES module。web shell 把它当普通脚本加载，其唯一的顶层副作用是
+`window.__ModuleLoader__.load({ id, factory })`；factory 里每一个 `require(spec)` 都对着
+shell 的模块表解析。该模块表只有两个来源：
+
+1. 平台 **seed 表** —— shell 硬编码进自己 Vite 产物的固定 specifier 集合；
+2. **boot graph 里的包行** —— 其他插件的 bundle。
+
+插件无法凭空造出别人的包行，所以 require 任何不在 seed 表里的名字都会抛
+`missed the module table`；而 boot 是 fail-closed 的，整个 Web UI 会停在
+"Failed to load plugins" 卡片上。
+
+v1.0.3 就是这么坏的：它 require 了上游已删除的 `@deepseek-ai/dsh-client-runtime/client`，
+而构建期毫无察觉 —— 类型来自一份**未版本化**的 harness 单仓本地检出，插件对着一个已经不存在的
+平台编译通过了。
+
+`platform-seeds.json` 钉住这张 seed 表，同时是 `tsdown.config.ts`（哪些 specifier 不打包）
+与 `scripts/check-platform-contract.mjs`（产物 require 越界即让构建失败）的唯一事实来源：
+
+```bash
+npm run check:platform                                      # 已包含在 `npm run build` 里
+npm run check:platform:against -- <已安装的 dsh 路径>        # 与真实安装做漂移比对
+npm run sync:platform -- <已安装的 dsh 路径>                 # 采纳新版本的 seed 表
+```
+
+`@deepseek-ai/*` 平台包以**精确版本**钉在 devDependencies 里，插件编译所依据的平台面因此
+可版本化、可评审，而不再依赖本地检出。
 
 ## License
 
