@@ -9,7 +9,7 @@
 
 import { execFile, spawn } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, readlinkSync } from 'node:fs'
 import { networkInterfaces } from 'node:os'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
@@ -133,8 +133,94 @@ function execStdout(file: string, args: string[]): Promise<string> {
 }
 
 /**
+ * Whether an exec failure means the binary itself is absent (ENOENT) rather
+ * than the command running and reporting a non-zero exit.
+ * @param error - the rejection from {@link execStdout}.
+ * @returns true when the executable could not be spawned at all.
+ */
+function isMissingBinary(error: unknown): boolean {
+  return (error as NodeJS.ErrnoException | null)?.code === 'ENOENT'
+}
+
+/**
+ * Read the local TCP sockets in LISTEN state from the kernel's `/proc` tables.
+ * This is the Linux fallback for hosts without `lsof`, which is most
+ * container images — including the ones `dsh web` is commonly run in. Only
+ * this network namespace's sockets are visible, which is exactly the view the
+ * serving instance and the instances it spawns live in.
+ * @param port - restrict the scan to one port when given.
+ * @returns listening port -> owning socket inode ('' when the row has none).
+ */
+function procListenSockets(port?: number): Map<number, string> {
+  const found = new Map<number, string>()
+  for (const file of ['/proc/net/tcp', '/proc/net/tcp6']) {
+    let text: string
+    try {
+      text = readFileSync(file, 'utf8')
+    } catch {
+      continue // An absent IPv6 table is normal; either table alone suffices.
+    }
+    for (const line of text.split('\n').slice(1)) {
+      // sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt uid timeout inode
+      // 0:  0100007F:0CEA 00000000:0000 0A 00000000:00000000 00:00000000 00000000   0       0 12345 1
+      const f = line.trim().split(/\s+/)
+      if (f.length < 10 || f[3] !== '0A') continue
+      const local = f[1] ?? ''
+      const listening = Number.parseInt(local.slice(local.indexOf(':') + 1), 16)
+      if (!Number.isInteger(listening) || listening <= 0) continue
+      if (port !== undefined && listening !== port) continue
+      found.set(listening, f[9] ?? '')
+    }
+  }
+  return found
+}
+
+/**
+ * Resolve which PIDs own the given socket inodes by scanning `/proc/<pid>/fd`
+ * links. Only processes this user is allowed to inspect are visible — the
+ * same permission bound `lsof` has.
+ * @param inodes - the socket inodes to look for.
+ * @returns the owning PIDs (possibly empty).
+ */
+function pidsForInodes(inodes: Iterable<string>): number[] {
+  const wanted = new Set(
+    [...inodes].filter(inode => inode !== '').map(inode => `socket:[${inode}]`),
+  )
+  if (wanted.size === 0) return []
+  let entries: string[]
+  try {
+    entries = readdirSync('/proc')
+  } catch {
+    return []
+  }
+  const pids = new Set<number>()
+  for (const entry of entries) {
+    const pid = Number(entry)
+    if (!Number.isInteger(pid) || pid <= 0) continue
+    let fds: string[]
+    try {
+      fds = readdirSync(`/proc/${entry}/fd`)
+    } catch {
+      continue // Exited, or not ours to inspect.
+    }
+    for (const fd of fds) {
+      try {
+        if (wanted.has(readlinkSync(`/proc/${entry}/fd/${fd}`))) {
+          pids.add(pid)
+          break
+        }
+      } catch {
+        // Descriptor closed between readdir and readlink.
+      }
+    }
+  }
+  return [...pids]
+}
+
+/**
  * Resolve the PIDs listening on a local TCP port. Windows uses `netstat`;
- * POSIX uses `lsof` (present on macOS and most Linux installs).
+ * POSIX prefers `lsof` and falls back to the kernel's `/proc` tables on Linux
+ * hosts that do not ship it.
  * @param port - the listening port.
  * @returns the listener PIDs (possibly empty).
  */
@@ -149,8 +235,13 @@ async function listeningPids(port: number): Promise<number[]> {
     }
     return [...pids]
   }
-  const stdout = await execStdout('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'])
-  return stdout.split(/\s+/).map(Number).filter(pid => Number.isInteger(pid) && pid > 0)
+  try {
+    const stdout = await execStdout('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'])
+    return stdout.split(/\s+/).map(Number).filter(pid => Number.isInteger(pid) && pid > 0)
+  } catch (error) {
+    if (process.platform !== 'linux' || !isMissingBinary(error)) throw error
+    return pidsForInodes(procListenSockets(port).values())
+  }
 }
 
 /**
@@ -232,7 +323,8 @@ function resolveLauncher(): Launcher {
  * Collect every distinct local TCP port that is listening, in ONE command
  * (not one `netstat`/`lsof` per candidate, which the old free-port scan ran
  * sequentially and could take many seconds on slow Windows boxes). Windows
- * parses `netstat`; POSIX parses `lsof` `(LISTEN)` lines.
+ * parses `netstat`; POSIX parses `lsof` `(LISTEN)` lines, falling back to
+ * `/proc/net/tcp*` on Linux hosts without `lsof`.
  * @returns the set of busy ports.
  */
 async function listeningPorts(): Promise<Set<number>> {
@@ -246,13 +338,18 @@ async function listeningPorts(): Promise<Set<number>> {
     }
     return set
   }
-  const stdout = await execStdout('lsof', ['-nP', '-iTCP', '-sTCP:LISTEN'])
-  for (const line of stdout.split(/\r?\n/)) {
-    // node  1234 user  13u  IPv4  12345  0t0  TCP 127.0.0.1:3080 (LISTEN)
-    const m = /:(\d+)\s+\(LISTEN\)\s*$/.exec(line.trim())
-    if (m !== null) set.add(Number(m[1]))
+  try {
+    const stdout = await execStdout('lsof', ['-nP', '-iTCP', '-sTCP:LISTEN'])
+    for (const line of stdout.split(/\r?\n/)) {
+      // node  1234 user  13u  IPv4  12345  0t0  TCP 127.0.0.1:3080 (LISTEN)
+      const m = /:(\d+)\s+\(LISTEN\)\s*$/.exec(line.trim())
+      if (m !== null) set.add(Number(m[1]))
+    }
+    return set
+  } catch (error) {
+    if (process.platform !== 'linux' || !isMissingBinary(error)) throw error
+    return new Set(procListenSockets().keys())
   }
-  return set
 }
 
 /**

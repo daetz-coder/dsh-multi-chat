@@ -8,7 +8,8 @@
  * (HMR safety). The node half and the invariant companion are exercised over
  * the same Context.
  */
-import { execFileSync } from 'node:child_process'
+import { spawn, type ChildProcess } from 'node:child_process'
+import { connect } from 'node:net'
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import { cleanup, render, fireEvent, waitFor } from '@testing-library/react'
@@ -28,19 +29,37 @@ import { apply as nodeApply, Config as nodeConfig } from '../src/index.ts'
 afterEach(cleanup)
 
 /**
- * `lsof` is the POSIX listener lookup's only backend (src/index.ts). The
- * container-grade Linux images that run `dsh web` headless frequently omit it,
- * and on those the lookup fails with `spawn lsof ENOENT` before it can report
- * an empty listener set — a real gap in the plugin, tracked separately, not
- * something this spec should paper over.
+ * Start a throwaway TCP listener in a CHILD process and resolve with its port.
+ * A child keeps `stopPort` from terminating the test runner, and an ephemeral
+ * port keeps the spec from colliding with anything else on the box.
+ * @returns the child and the port it is listening on.
  */
-function hasLsof(): boolean {
-  try {
-    execFileSync('lsof', ['-ti', 'tcp:0', '-sTCP:LISTEN'], { stdio: 'ignore' })
-    return true
-  } catch (error) {
-    // No matches exits non-zero too; only a missing binary means "absent".
-    return (error as NodeJS.ErrnoException).code !== 'ENOENT'
+function startListener(): Promise<{ child: ChildProcess; port: number }> {
+  const child = spawn(
+    process.execPath,
+    ['-e', "const s=require('net').createServer();s.listen(0,'127.0.0.1',()=>console.log(s.address().port))"],
+    { stdio: ['ignore', 'pipe', 'ignore'] },
+  )
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { reject(new Error('listener never reported a port')) }, 10_000)
+    let buffered = ''
+    child.stdout?.on('data', (chunk: Buffer) => {
+      buffered += String(chunk)
+      const line = buffered.split('\n')[0]?.trim() ?? ''
+      if (line !== '') {
+        clearTimeout(timer)
+        resolve({ child, port: Number(line) })
+      }
+    })
+    child.once('error', reject)
+  })
+}
+
+/** Wait for a child to be reaped by the signal `stopPort` sends it. */
+async function waitForExit(child: ChildProcess): Promise<void> {
+  for (let i = 0; i < 50; i++) {
+    if (child.exitCode !== null || child.signalCode !== null) return
+    await new Promise(resolve => setTimeout(resolve, 100))
   }
 }
 
@@ -330,7 +349,22 @@ describe('ui-multi-wall node half', () => {
     expect(registered).toHaveLength(5)
   })
 
-  it.skipIf(!hasLsof())('stopPort no longer refuses the self port (may stop the serving instance)', async () => {
+  it('finds and stops a real listener on a host without lsof', async () => {
+    // Exercises whichever backend is available: `lsof` where it exists, and
+    // the /proc/net/tcp* + /proc/<pid>/fd fallback where it does not — which
+    // is most container images, including the ones `dsh web` usually runs in.
+    const { stopPort } = await import('../src/index.ts')
+    const { child, port } = await startListener()
+    try {
+      expect(await stopPort(port, 0)).toEqual({ port, ok: true })
+      await waitForExit(child)
+      expect(child.signalCode ?? child.exitCode).not.toBeNull()
+    } finally {
+      child.kill('SIGKILL')
+    }
+  })
+
+  it('stopPort no longer refuses the self port (may stop the serving instance)', async () => {
     const { stopPort } = await import('../src/index.ts')
     // 3199 has no listener, so the result is a listener error — NOT the old
     // "serving this wall" refusal. The self-port path must reach the listener

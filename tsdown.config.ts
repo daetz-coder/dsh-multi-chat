@@ -34,7 +34,7 @@ export default defineConfig([
   // Node half (ESM) - produces lib/index.js
   {
     name: 'dsh-multi-chat',
-    entry: { index: 'src/index.ts' },
+    entry: { index: 'src/index.ts', invariant: 'src/invariant.ts' },
     outDir: 'lib',
     format: ['esm'],
     platform: 'node',
