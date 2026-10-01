@@ -3,8 +3,13 @@ node_modules/
 *.log
 *.tgz
 
-# Build artifacts (regenerated from harness-src)
+# Build intermediates
 *.tsbuildinfo
+
+# Vendored upstream source checkout, owned by upstream git. Not a dependency
+# since the platform packages are pinned in devDependencies; it is kept only
+# as a local reference for reading upstream sources.
+harness-src/
 
 # Runtime state
 .wall-pids.json

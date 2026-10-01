@@ -19,6 +19,22 @@ import { loadBundleText } from './dsh-module-loader.ts'
 
 const BUNDLE = join(process.cwd(), 'lib', 'client.js')
 
+/**
+ * The stand-in resolves every seed word by importing the REAL platform
+ * packages through vite — and `@deepseek-ai/*` is inlined (vitest.config.ts
+ * `server.deps.inline`) because those packages ship `.module.css` sidecars
+ * that only vite can turn into modules. That cold import chain (react,
+ * react-dom, cordis, client-store, client-ui-slots, client-ui-primitives)
+ * measures ~5s on a warm Windows checkout, i.e. it straddles vitest's 5s
+ * default and fails as a spurious timeout.
+ *
+ * This is import cost, not a hang: a genuine module-table miss throws
+ * synchronously inside the factory, so it surfaces as a failed assertion
+ * (the "missed the module table" error), never as a timeout. The budget below
+ * therefore only has to clear the import, not detect a stuck boot.
+ */
+const SEED_IMPORT_TIMEOUT_MS = 30_000
+
 describe('lib/client.js (shipped browser half)', () => {
   it('materializes against the platform seed table and exposes the plugin face', async () => {
     const exports = await loadBundleText<{ apply: unknown; inject: unknown }>(
@@ -27,7 +43,7 @@ describe('lib/client.js (shipped browser half)', () => {
     )
     expect(typeof exports.apply).toBe('function')
     expect(exports.inject).toEqual(['slots', 'locale'])
-  })
+  }, SEED_IMPORT_TIMEOUT_MS)
 
   it('registers under the row id the boot graph expects', async () => {
     // A second materialization of the same row returns the memoized exports —
@@ -35,5 +51,5 @@ describe('lib/client.js (shipped browser half)', () => {
     const first = await loadBundleText('dsh-multi-chat', readFileSync(BUNDLE, 'utf8'))
     const second = await loadBundleText('dsh-multi-chat', readFileSync(BUNDLE, 'utf8'))
     expect(second).toBe(first)
-  })
+  }, SEED_IMPORT_TIMEOUT_MS)
 })

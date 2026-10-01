@@ -97,8 +97,8 @@ dsh web --port 3084
 或手动：
 
 ```bash
-npm pack                                                  # 得到 tarball (dsh-multi-chat-1.0.3.tgz)
-dsh plugin --profile web add dsh-multi-chat-1.0.3.tgz     # DSH 自动把包加入 bundle 层栈
+npm pack                                                  # 得到 tarball (dsh-multi-chat-<version>.tgz)
+dsh plugin --profile web add ./dsh-multi-chat-*.tgz        # DSH 自动把包加入 bundle 层栈
 ```
 
 卸载（一条命令，无需手动清理任何文件 —— 重启 `dsh web` 后生效）：
@@ -143,7 +143,7 @@ dsh plugin --profile web remove dsh-multi-chat
 | **一条命令（npm 官方源）** | `dsh plugin --profile web add dsh-multi-chat` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **npx（免下载）** | `npx dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **全局 CLI（npm）** | `npm i -g dsh-multi-chat` 然后 `dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` 然后 `npm rm -g dsh-multi-chat` |
-| **Tarball（离线）** | `npm pack` → `dsh plugin --profile web add ./dsh-multi-chat-1.0.3.tgz` | `dsh plugin --profile web remove dsh-multi-chat` |
+| **Tarball（离线）** | `npm pack` → `dsh plugin --profile web add ./dsh-multi-chat-*.tgz` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **Git clone** | `node bin/dsh-multi-chat.mjs install` | `dsh plugin --profile web remove dsh-multi-chat` |
 
 > `dsh plugin --profile web remove dsh-multi-chat` 是**所有渠道统一的卸载命令**：

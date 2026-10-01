@@ -1,0 +1,24 @@
+# Normalize everything to LF in the repository and check LF back out.
+#
+# Without this, `core.autocrlf=true` on Windows rewrites the checked-in build
+# artifacts (lib/**) on every rebuild, so an unchanged bundle still shows up as
+# a whole-file diff. lib/ is committed, so it has to survive a round trip.
+* text=auto eol=lf
+
+# Windows script formats that must keep CRLF to run correctly.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.vbs text eol=crlf
+*.bat text eol=crlf
+
+# Binaries.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.tgz binary
+*.pdf binary
+*.woff binary
+*.woff2 binary

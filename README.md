@@ -97,8 +97,8 @@ dsh web --port 3084
 Or manual:
 
 ```bash
-npm pack                                                  # produce a tarball (dsh-multi-chat-1.0.3.tgz)
-dsh plugin --profile web add dsh-multi-chat-1.0.3.tgz     # DSH adds the package to the bundle layer stack automatically
+npm pack                                                  # produce a tarball (dsh-multi-chat-<version>.tgz)
+dsh plugin --profile web add ./dsh-multi-chat-*.tgz        # DSH adds the package to the bundle layer stack automatically
 ```
 
 Uninstall (one command, nothing manual to clean up — restart `dsh web` to unload it):
@@ -143,7 +143,7 @@ Open that URL on your phone and enter the token to reach the full DSH UI. The ga
 | **One-command (registry)** | `dsh plugin --profile web add dsh-multi-chat` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **npx (no download)** | `npx dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **Global CLI (npm)** | `npm i -g dsh-multi-chat` then `dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` then `npm rm -g dsh-multi-chat` |
-| **Tarball (offline)** | `npm pack` → `dsh plugin --profile web add ./dsh-multi-chat-1.0.3.tgz` | `dsh plugin --profile web remove dsh-multi-chat` |
+| **Tarball (offline)** | `npm pack` → `dsh plugin --profile web add ./dsh-multi-chat-*.tgz` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **Git clone** | `node bin/dsh-multi-chat.mjs install` | `dsh plugin --profile web remove dsh-multi-chat` |
 
 > `dsh plugin --profile web remove dsh-multi-chat` is the **single uninstall

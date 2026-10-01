@@ -30,6 +30,20 @@ function browserSourcePath(source: string, sourcemapPath: string): string {
   return repositoryPath.startsWith('src/') ? `../${repositoryPath}` : source
 }
 
+/**
+ * Repo-relative, forward-slashed path.
+ *
+ * Both consumers below must stay machine-independent. The CSS plugin's virtual
+ * id is echoed verbatim into the bundle's `//#region` comment, so an absolute
+ * path publishes the build machine's directory layout; and the filename handed
+ * to lightningcss feeds the `[hash]` in `[hash]_[local]`, so an absolute path
+ * gives every checkout a different set of CSS class names. Either one makes the
+ * artifact unreproducible and turns a source change into a whole-bundle diff.
+ */
+function repoRelative(absolutePath: string): string {
+  return relative(REPOSITORY_ROOT, absolutePath).split(sep).join('/')
+}
+
 export default defineConfig([
   // Node half (ESM) - produces lib/index.js
   {
@@ -78,21 +92,29 @@ export default defineConfig([
         resolveId(source: string, importer: string | undefined) {
           if (!source.endsWith('.module.css')) return null
           const abs = importer !== undefined ? resolve(dirname(importer), source) : source
-          return `\0dsh-css:${abs}.mjs`
+          return `\0dsh-css:${repoRelative(abs)}.mjs`
         },
         async load(virtualId: string) {
           if (!virtualId.startsWith('\0dsh-css:')) return null
-          const fileId = virtualId.slice('\0dsh-css:'.length, -'.mjs'.length)
+          const repositoryPath = virtualId.slice('\0dsh-css:'.length, -'.mjs'.length)
+          const fileId = resolve(REPOSITORY_ROOT, repositoryPath)
           this.addWatchFile(fileId)
           const source = await readFile(fileId)
           const { code, exports: cssExports } = transform({
-            filename: fileId,
+            // Relative, not absolute: this is what keeps `[hash]` stable
+            // across checkouts, so the class map below is reproducible.
+            filename: repositoryPath,
             code: source,
             cssModules: { pattern: '[hash]_[local]' },
             minify: true,
           })
           const classMap: Record<string, string> = {}
-          for (const [local, exp] of Object.entries(cssExports ?? {})) classMap[local] = exp.name
+          // Sorted: lightningcss hands back its exports in a hash-dependent
+          // order, so copying them verbatim reshuffles the emitted object on
+          // every build and makes an untouched CSS file look changed.
+          for (const local of Object.keys(cssExports ?? {}).sort()) {
+            classMap[local] = (cssExports as Record<string, { name: string }>)[local].name
+          }
           return [
             `const css = ${JSON.stringify(code.toString())};`,
             `const tagId = ${JSON.stringify(`dsh-multi-chat/${basename(fileId)}`)};`,
