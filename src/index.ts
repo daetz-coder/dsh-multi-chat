@@ -10,7 +10,8 @@
 import { execFile, spawn } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { existsSync, readFileSync, readdirSync, readlinkSync } from 'node:fs'
-import { networkInterfaces } from 'node:os'
+import { homedir, networkInterfaces } from 'node:os'
+import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-host-webserver'
@@ -46,6 +47,16 @@ export interface MultiWallConfig {
    * a random token is generated per gateway start (returned by /multi/api/link).
    */
   gatewayToken?: string
+  /**
+   * Launch tokens for locally started instances, keyed by port.
+   *
+   * Since DSH 0.2 every `dsh web` process mints one launch token and answers an
+   * unauthenticated `/` with 401, so a probe without it marks the instance
+   * dead. `dsh-multi-chat start` records the tokens it captures in
+   * `$DSH_HOME/multi-wall-instances.json`, which is read automatically;
+   * instances started some other way can be added here by hand.
+   */
+  tokens?: Record<string, string>
 }
 
 /** Schema-validated config (the Loader resolves defaults for absent keys). */
@@ -56,6 +67,7 @@ export const Config = z.object({
   publicUrl: z.string().default(''),
   gatewayPort: z.number().default(0),
   gatewayToken: z.string().default(''),
+  tokens: z.dict(z.string()).default({}),
 })
 
 /** MIME for JSON probe answers. */
@@ -66,6 +78,34 @@ interface ProbeRow {
   port: number
   alive: boolean
   status: number
+}
+
+/** Where `dsh-multi-chat start` records the tokens it captured. */
+const INSTANCE_TOKENS_FILE = 'multi-wall-instances.json'
+
+/**
+ * Launch tokens published by `dsh-multi-chat start`, keyed by port.
+ *
+ * `$DSH_HOME` is the only path both the CLI (which may run from an npx cache)
+ * and this plugin (installed inside the profile) resolve identically, so the
+ * handoff has to live there rather than beside either package.
+ */
+function launchTokensFromFile(): Record<string, string> {
+  const home = process.env.DSH_HOME !== undefined && process.env.DSH_HOME !== ''
+    ? process.env.DSH_HOME
+    : join(homedir(), '.dsh')
+  try {
+    const parsed = JSON.parse(readFileSync(join(home, INSTANCE_TOKENS_FILE), 'utf8')) as {
+      tokens?: Record<string, string>
+    }
+    const tokens: Record<string, string> = {}
+    for (const [port, token] of Object.entries(parsed.tokens ?? {})) {
+      if (/^\d+$/.test(port) && typeof token === 'string' && token !== '') tokens[port] = token
+    }
+    return tokens
+  } catch {
+    return {} // No file yet, or unreadable: probe without tokens, as before.
+  }
 }
 
 /** GET one local URL with a short timeout; resolve {status, body} or reject. */
@@ -80,10 +120,19 @@ async function request(url: string, timeoutMs = 600): Promise<{ status: number; 
   }
 }
 
-/** Is this local port a live DSH instance (index.html carries __DSH_BOOT__)? */
-async function probePort(port: number): Promise<ProbeRow> {
+/**
+ * Is this local port a live DSH instance?
+ *
+ * DSH 0.2 requires the per-process launch token: `/` answers 401 without it,
+ * which would make every real instance look dead. When a token is known the
+ * probe presents it; 200 + `__DSH_BOOT__` then means alive as before.
+ */
+async function probePort(port: number, token?: string): Promise<ProbeRow> {
+  const url = token === undefined || token === ''
+    ? `http://127.0.0.1:${port}/`
+    : `http://127.0.0.1:${port}/?token=${encodeURIComponent(token)}`
   try {
-    const { status, body } = await request(`http://127.0.0.1:${port}/`)
+    const { status, body } = await request(url)
     return { port, alive: status === 200 && body.includes('__DSH_BOOT__'), status }
   } catch {
     return { port, alive: false, status: 0 }
@@ -91,11 +140,13 @@ async function probePort(port: number): Promise<ProbeRow> {
 }
 
 /** Concurrent probe of many ports (bounded chunking). */
-async function probePorts(ports: number[]): Promise<ProbeRow[]> {
+async function probePorts(ports: number[], tokens: Record<string, string> = {}): Promise<ProbeRow[]> {
   const CHUNK = 16
   const out: ProbeRow[] = []
   for (let i = 0; i < ports.length; i += CHUNK) {
-    out.push(...(await Promise.all(ports.slice(i, i + CHUNK).map(port => probePort(port)))))
+    out.push(...(await Promise.all(
+      ports.slice(i, i + CHUNK).map(port => probePort(port, tokens[String(port)])),
+    )))
   }
   return out
 }
@@ -525,6 +576,11 @@ export function apply(ctx: Context, config: MultiWallConfig = {}): void {
   let gateway: GatewayHandle | null = null
   let gatewayTargetPort = -1
 
+  // Tokens published by `dsh-multi-chat start`, overlaid with anything the
+  // profile configures. Re-read per request: `start` may run after this plugin
+  // booted, and a token only becomes valid for the instance that printed it.
+  const tokensFor = (): Record<string, string> => ({ ...launchTokensFromFile(), ...(config.tokens ?? {}) })
+
   ctx.effect(() => ctx.webServer.register({
     kind: 'exact',
     path: '/multi/api/ports',
@@ -549,7 +605,7 @@ export function apply(ctx: Context, config: MultiWallConfig = {}): void {
       // to watch (or stop) the very instance hosting the wall. Recursion is
       // prevented client-side by the ?multi-wall=embed pane flag, not by
       // hiding the self port.
-      probePorts(ports).then(results => {
+      probePorts(ports, tokensFor()).then(results => {
         json(res, { ports: results.filter(row => row.alive) })
       }).catch(() => json(res, { ports: [] }, 500))
     },
@@ -569,7 +625,7 @@ export function apply(ctx: Context, config: MultiWallConfig = {}): void {
         .split(',')
         .map(Number)
         .filter(p => Number.isInteger(p) && p > 0)
-      probePorts(ports).then(results => {
+      probePorts(ports, tokensFor()).then(results => {
         json(res, { ports: results })
       }).catch(() => json(res, { ports: [] }, 500))
     },

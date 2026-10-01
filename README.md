@@ -115,6 +115,29 @@ dsh plugin --profile web remove dsh-multi-chat
 3. Inside the wall view: auto-discovery (own port excluded), column switching (auto/1/2/3/4/6, horizontally filled by default), click title to maximize, ⟳ refresh one, ↗ open in a new tab, ✕ remove from view, refresh all, and live online status dots. The layout is persisted to `localStorage`.
 4. To exit the wall, click the **"Exit" button in the toolbar's top-right** to switch back to the chat view in one click.
 
+## Launch tokens (DSH 0.2)
+
+Since DSH 0.2, every `dsh web` process mints a **launch token**, answers an unauthenticated `/` with **401**, and only then serves the shell. An unauthenticated liveness probe therefore sees every real instance as dead, and the wall stays empty.
+
+The wall presents the token automatically. `dsh-multi-chat start` reads each instance's token off its console and records it in `$DSH_HOME/multi-wall-instances.json`, which the node half picks up — no configuration needed:
+
+```bash
+dsh-multi-chat start --ports 3080,3081   # tokens captured automatically
+```
+
+Instances you start **some other way** must be listed by hand, either by editing that same JSON file or via the profile patch:
+
+```yaml
+- id: ui-multi-wall
+  name: dsh-multi-chat
+  config:
+    tokens:
+      "3085": "<the token dsh web printed>"
+      "3086": "<the token dsh web printed>"
+```
+
+Tokens are per-process: restarting an instance mints a new one, so re-read it from that instance's startup output. `dsh-multi-chat start` also keeps each instance's full console log in `$DSH_HOME/multi-wall-logs/instance-<port>.log`.
+
 ## Phone / remote access (built-in authenticated gateway)
 
 The official `dsh web` **deliberately forbids `--host 0.0.0.0`** (it would expose remote code execution to the network). This plugin ships a built-in **token-authenticated intranet gateway**: click the "Phone access" button and it **automatically** starts a gateway for the current instance (listening on `0.0.0.0`, reverse-proxying to `127.0.0.1:<this instance's port>`), returning a LAN URL + login token.

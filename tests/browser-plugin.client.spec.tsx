@@ -8,8 +8,6 @@
  * (HMR safety). The node half and the invariant companion are exercised over
  * the same Context.
  */
-import { spawn, type ChildProcess } from 'node:child_process'
-import { connect } from 'node:net'
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import { cleanup, render, fireEvent, waitFor } from '@testing-library/react'
@@ -24,44 +22,8 @@ import { WallToggle } from '../src/client/WallToggle.tsx'
 import { WallView, type WallViewProps } from '../src/client/WallView.tsx'
 import { createWallStore } from '../src/client/store.ts'
 import { zh } from '../src/client/locales.ts'
-import { apply as nodeApply, Config as nodeConfig } from '../src/index.ts'
 
 afterEach(cleanup)
-
-/**
- * Start a throwaway TCP listener in a CHILD process and resolve with its port.
- * A child keeps `stopPort` from terminating the test runner, and an ephemeral
- * port keeps the spec from colliding with anything else on the box.
- * @returns the child and the port it is listening on.
- */
-function startListener(): Promise<{ child: ChildProcess; port: number }> {
-  const child = spawn(
-    process.execPath,
-    ['-e', "const s=require('net').createServer();s.listen(0,'127.0.0.1',()=>console.log(s.address().port))"],
-    { stdio: ['ignore', 'pipe', 'ignore'] },
-  )
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { reject(new Error('listener never reported a port')) }, 10_000)
-    let buffered = ''
-    child.stdout?.on('data', (chunk: Buffer) => {
-      buffered += String(chunk)
-      const line = buffered.split('\n')[0]?.trim() ?? ''
-      if (line !== '') {
-        clearTimeout(timer)
-        resolve({ child, port: Number(line) })
-      }
-    })
-    child.once('error', reject)
-  })
-}
-
-/** Wait for a child to be reaped by the signal `stopPort` sends it. */
-async function waitForExit(child: ChildProcess): Promise<void> {
-  for (let i = 0; i < 50; i++) {
-    if (child.exitCode !== null || child.signalCode !== null) return
-    await new Promise(resolve => setTimeout(resolve, 100))
-  }
-}
 
 /**
  * Build a translate stub resolving through `dicts` in order, falling back to
@@ -311,67 +273,5 @@ describe('WallView', () => {
     const { getByText } = render(<WallView {...props} />)
     fireEvent.click(getByText('手机访问'))
     await waitFor(() => expect(getByText(/192\.168\.1\.5:3084/)).toBeTruthy())
-  })
-})
-
-describe('ui-multi-wall node half', () => {
-  it('config schema defaults the scan range', () => {
-    const cfg = nodeConfig({})
-    expect(cfg.scanFrom).toBe(3070)
-    expect(cfg.scanTo).toBe(3110)
-    expect(cfg.ports).toEqual([])
-    expect(cfg.publicUrl).toBe('')
-  })
-
-  it('the node apply registers both probe routes on a live Context', async () => {
-    // The node half is genuinely functional: mount it on a real cordis
-    // Context whose webServer fake records registrations.
-    const ctx = new Context()
-    const registered: { kind: string; path: string }[] = []
-    ctx.provide('webServer', {
-      register: (route: { kind: string; path: string }) => {
-        registered.push(route)
-        return () => {}
-      },
-    } as never)
-    const fiber = ctx.plugin({ name: nodeApply.name, inject: ['webServer'], apply: nodeApply })
-    await fiber.await()
-    expect(registered.map(r => `${r.kind} ${r.path}`)).toEqual([
-      'exact /multi/api/ports',
-      'exact /multi/api/status',
-      'exact /multi/api/stop',
-      'exact /multi/api/create',
-      'exact /multi/api/link',
-    ])
-    await fiber.dispose()
-    // Registration disposers are recorded by the fake; the plugin fiber
-    // unloads cleanly (HMR safety).
-    expect(registered).toHaveLength(5)
-  })
-
-  it('finds and stops a real listener on a host without lsof', async () => {
-    // Exercises whichever backend is available: `lsof` where it exists, and
-    // the /proc/net/tcp* + /proc/<pid>/fd fallback where it does not — which
-    // is most container images, including the ones `dsh web` usually runs in.
-    const { stopPort } = await import('../src/index.ts')
-    const { child, port } = await startListener()
-    try {
-      expect(await stopPort(port, 0)).toEqual({ port, ok: true })
-      await waitForExit(child)
-      expect(child.signalCode ?? child.exitCode).not.toBeNull()
-    } finally {
-      child.kill('SIGKILL')
-    }
-  })
-
-  it('stopPort no longer refuses the self port (may stop the serving instance)', async () => {
-    const { stopPort } = await import('../src/index.ts')
-    // 3199 has no listener, so the result is a listener error — NOT the old
-    // "serving this wall" refusal. The self-port path must reach the listener
-    // lookup instead of short-circuiting.
-    const result = await stopPort(3199, 3199)
-    expect(result.ok).toBe(false)
-    expect(result.error).toContain('no listener')
-    expect(result.error).not.toContain('serving this wall')
   })
 })

@@ -22,7 +22,7 @@
 
 import { spawn, spawnSync } from 'node:child_process'
 import { createServer as createNetServer } from 'node:net'
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, openSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir, networkInterfaces } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -62,9 +62,10 @@ function dshHome() {
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)) }
 
-async function probe(port, timeoutMs = 600) {
+async function probe(port, token = null, timeoutMs = 600) {
+  const url = token === null ? `http://127.0.0.1:${port}/` : `http://127.0.0.1:${port}/?token=${encodeURIComponent(token)}`
   try {
-    const res = await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(timeoutMs) })
+    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) })
     const body = await res.text()
     return res.status === 200 && body.includes('__DSH_BOOT__')
   } catch {
@@ -72,24 +73,102 @@ async function probe(port, timeoutMs = 600) {
   }
 }
 
-async function waitReady(port, timeoutMs = 20000) {
+async function waitReady(port, token = null, timeoutMs = 60000) {
   const deadline = Date.now() + timeoutMs
   for (;;) {
-    if (await probe(port)) return true
+    // A cold instance accepts the connection but needs noticeably longer than
+    // a warm one to assemble index.html, so the readiness probe gets its own
+    // generous budget; `probe`'s 600ms default is tuned for the wall's liveness
+    // polls against already-running instances, not for boot detection.
+    if (await probe(port, token, 10000)) return true
     if (Date.now() > deadline) return false
     await sleep(400)
   }
 }
 
-function spawnDetached(file, args, { shell = false } = {}) {
+function spawnDetached(file, args, { shell = false, logFile = null } = {}) {
+  // A log file is requested by handing `spawn` the file descriptors, not with
+  // the shell's `>` syntax: a DETACHED shell does not pass our stdio handles on
+  // to the process it wraps, so the redirect silently produces an empty file.
+  const stdio = logFile === null ? 'ignore' : ['ignore', openSync(logFile, 'a'), openSync(logFile, 'a')]
   const child = spawn(file, args, {
     detached: true,
-    stdio: 'ignore',
+    stdio,
     windowsHide: true,
     shell,
   })
   child.unref()
   return child.pid
+}
+
+/**
+ * Resolve the `dsh` CLI's JavaScript entry so an instance can be launched as
+ * `node <entry> web --port <n>` with no shell in between.
+ *
+ * Two reasons this is not optional: on Windows Node refuses to execute the
+ * `dsh.cmd` shim without a shell, and once a shell IS involved the detached
+ * child never receives the stdio handles carrying the launch token. Spawning
+ * the entry directly gives the instance an inherited log handle, which is how
+ * `readLaunchToken` below gets to see the token.
+ * @returns the absolute path to the CLI entry, or null when it cannot be found.
+ */
+function dshCliEntry() {
+  const lookup = spawnSync(isWin ? 'where' : 'which', ['dsh'], { encoding: 'utf8' })
+  const shim = (lookup.stdout ?? '').split(/\r?\n/).map(line => line.trim()).find(Boolean)
+  if (shim === undefined) return null
+  const candidates = isWin
+    // <npm-bin>\dsh.cmd  ->  <npm-bin>\node_modules\@deepseek-ai\dsh\lib\bin.js
+    ? [join(dirname(shim), 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js')]
+    // <prefix>/bin/dsh is a symlink to .../lib/node_modules/@deepseek-ai/dsh/lib/bin.js
+    : [
+      (() => { try { return join(realpathSync(shim), '..', 'bin.js') } catch { return '' } })(),
+      join(dirname(shim), '..', 'lib', 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js'),
+    ]
+  return candidates.find(candidate => candidate !== '' && existsSync(candidate)) ?? null
+}
+
+/**
+ * Each `dsh web` process mints one launch token at boot and prints it as
+ * `dsh web: http://127.0.0.1:<port>/?token=<tok>`. Since DSH 0.2 every
+ * instance answers an unauthenticated `/` with 401, so the wall's liveness
+ * probe must present this token or it will mark every instance dead.
+ *
+ * The token is per-process and is never persisted by DSH, so we read it off
+ * the instance's own console output — hence the log file: piping stdout would
+ * leave the detached child writing into a pipe nobody drains once this
+ * process exits.
+ */
+const LAUNCH_TOKEN_RE = /\/\?token=([A-Za-z0-9_-]+)/
+
+async function readLaunchToken(logFile, port, timeoutMs = 30000) {
+  const deadline = Date.now() + timeoutMs
+  const needle = `127.0.0.1:${port}/?token=`
+  for (;;) {
+    let text = ''
+    try { text = readFileSync(logFile, 'utf8') } catch { /* not created yet */ }
+    if (text !== '') {
+      // Match only this port's line: every instance shares one log-free
+      // console, and another port's token would authenticate nothing.
+      const line = text.split(/\r?\n/).find(l => l.includes(needle))
+      const match = line === undefined ? null : LAUNCH_TOKEN_RE.exec(line)
+      if (match !== null) return match[1]
+    }
+    if (Date.now() > deadline) return null
+    await sleep(400)
+  }
+}
+
+/**
+ * The wall runs inside the profile's copy of this package while the CLI may
+ * run from an npx cache, so a package-relative file would never be shared.
+ * `$DSH_HOME` is the one location both sides resolve identically.
+ */
+const INSTANCES_FILE = () => join(dshHome(), 'multi-wall-instances.json')
+
+function writeInstanceTokens(tokens) {
+  const file = INSTANCES_FILE()
+  mkdirSync(dirname(file), { recursive: true })
+  writeFileSync(file, JSON.stringify({ updatedAt: new Date().toISOString(), tokens }, null, 2), 'utf8')
 }
 
 function killPid(pid) {
@@ -254,21 +333,48 @@ async function cmdStart(args) {
     process.stdout.write(`[start] generated gateway token: ${token}  (save it!)\n`)
   }
 
-  // Resolve the dsh launcher once (shell on Windows resolves the .cmd shim).
+  // Resolve the dsh launcher once. The shell form only resolves the .cmd shim;
+  // it is the fallback for when the CLI entry cannot be located.
   const dshFile = 'dsh'
   const dshShell = isWin
+  const dshEntry = dshCliEntry()
 
   const state = { pid: [], ports: [], gateways: [], startedAt: new Date().toISOString() }
   const started = []
 
+  const tokens = {}
+  const logDir = join(dshHome(), 'multi-wall-logs')
+  mkdirSync(logDir, { recursive: true })
+
   for (const port of ports) {
-    const pid = spawnDetached(dshFile, ['web', '--port', String(port)], { shell: dshShell })
+    const logFile = join(logDir, `instance-${port}.log`)
+    // Prefer the shell-free form: only then does the instance inherit the log
+    // handle and its launch token become readable to `readLaunchToken`.
+    const pid = dshEntry === null
+      ? spawnDetached(dshFile, ['web', '--port', String(port)], { shell: dshShell, logFile })
+      : spawnDetached(process.execPath, [dshEntry, 'web', '--port', String(port)], { logFile })
     state.pid.push(pid)
     state.ports.push(port)
     process.stdout.write(`dsh web --port ${port} (pid ${pid})\n`)
-    const ready = await waitReady(port)
-    if (!ready) process.stdout.write(`  ⚠ instance on :${port} did not answer the DSH shell yet — check its console\n`)
+    if (dshEntry === null) {
+      process.stdout.write('  ⚠ dsh CLI entry not resolvable; launch-token capture unavailable\n')
+    }
+    // Read the launch token before probing: an unauthenticated request answers
+    // 401, which would report every freshly started instance as dead.
+    const token = await readLaunchToken(logFile, port)
+    if (token !== null) tokens[port] = token
+    const ready = await waitReady(port, token, 60000)
+    if (!ready) {
+      process.stdout.write(`  ⚠ instance on :${port} did not answer the DSH shell yet — check ${logFile}\n`)
+    } else {
+      process.stdout.write(`  ✓ ready${token === null ? ' (no launch token printed)' : ' (launch token captured)'}\n`)
+    }
     started.push(port)
+  }
+
+  if (Object.keys(tokens).length > 0) {
+    writeInstanceTokens(tokens)
+    process.stdout.write(`instance tokens saved to ${INSTANCES_FILE()}\n`)
   }
 
   if (opts.remote) {

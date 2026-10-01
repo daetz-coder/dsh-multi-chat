@@ -36,6 +36,16 @@ export interface MultiWallConfig {
      * a random token is generated per gateway start (returned by /multi/api/link).
      */
     gatewayToken?: string;
+    /**
+     * Launch tokens for locally started instances, keyed by port.
+     *
+     * Since DSH 0.2 every `dsh web` process mints one launch token and answers an
+     * unauthenticated `/` with 401, so a probe without it marks the instance
+     * dead. `dsh-multi-chat start` records the tokens it captures in
+     * `$DSH_HOME/multi-wall-instances.json`, which is read automatically;
+     * instances started some other way can be added here by hand.
+     */
+    tokens?: Record<string, string>;
 }
 /** Schema-validated config (the Loader resolves defaults for absent keys). */
 export declare const Config: z<Schemastery.ObjectS<NoInfer<{
@@ -45,6 +55,7 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
     publicUrl: z<string, string, "defined">;
     gatewayPort: z<number, number, "defined">;
     gatewayToken: z<string, string, "defined">;
+    tokens: z<import("@deepseek-ai/cosmokit").Dict<string, string>, import("@deepseek-ai/cosmokit").Dict<string, string>, "defined">;
 }>>, Schemastery.ObjectT<NoInfer<{
     scanFrom: z<number, number, "defined">;
     scanTo: z<number, number, "defined">;
@@ -52,6 +63,7 @@ export declare const Config: z<Schemastery.ObjectS<NoInfer<{
     publicUrl: z<string, string, "defined">;
     gatewayPort: z<number, number, "defined">;
     gatewayToken: z<string, string, "defined">;
+    tokens: z<import("@deepseek-ai/cosmokit").Dict<string, string>, import("@deepseek-ai/cosmokit").Dict<string, string>, "defined">;
 }>>, "plain">;
 /** One stop result row from /multi/api/stop. */
 export interface StopRow {
