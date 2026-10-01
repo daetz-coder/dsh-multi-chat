@@ -49,7 +49,8 @@
 
 ```bash
 # 1. 安装 —— 从 npm 官方源一条命令搞定（无需下载任何 CLI）：
-dsh plugin --profile web add dsh-multi-chat
+dsh plugin --profile web add dsh-multi-chat       # 适用于 dsh web
+dsh plugin --profile desktop add dsh-multi-chat   # 适用于桌面版应用
 
 #    ……或通过插件自带的 npx CLI（先打包再安装）：
 npx dsh-multi-chat install
@@ -134,7 +135,19 @@ dsh plugin --profile web remove dsh-multi-chat
 
 ## 分发与安装
 
-`dsh-multi-chat` 已发布到 npm（无作用域公开包），并在 GitHub 按 tag 发布 Release（源码 zip/tarball）。下面每条渠道殊途同归：包成为 web profile 的依赖 → DSH 自动调和进 bundle 层栈（包声明了 `dsh.bundle.patch`，自带 `cordis.patch.yml` 自动挂载，无需手改任何文件）→ 重启 `dsh web` 生效。
+`dsh-multi-chat` 已发布到 npm（无作用域公开包），并在 GitHub 按 tag 发布 Release（源码 zip/tarball）。下面每条渠道殊途同归：包成为目标 profile 的依赖 → DSH 自动调和进 bundle 层栈（包声明了 `dsh.bundle.patch`，自带 `cordis.patch.yml` 自动挂载，无需手改任何文件）→ 重启该 profile 生效。
+
+### 用哪个 profile？（`web` 还是 `desktop`）
+
+两者都支持，而且跑的是**同一套**浏览器界面、**同一张**平台模块表：
+
+| | `web`（`dsh web`） | `desktop`（桌面版应用） |
+|---|---|---|
+| 宿主侧 —— `/multi/api/*` 路由 | ✅ 依赖 `webServer` 服务 | ✅ `dsh-web-app` 已提供 |
+| 浏览器侧 —— slot 注册 | ✅ | ✅ seed 表完全相同 |
+| 市场列表展示 | ✅ | ✅ |
+
+下面任何命令把 `--profile web` 换成 `--profile desktop` 即可。可参照的先例是 `dshmarket`：它同样声明 `dsh.client.platform: "web"`，却在两端都正常运行。
 
 ### 安装 / 卸载速查表
 
@@ -145,6 +158,8 @@ dsh plugin --profile web remove dsh-multi-chat
 | **全局 CLI（npm）** | `npm i -g dsh-multi-chat` 然后 `dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` 然后 `npm rm -g dsh-multi-chat` |
 | **Tarball（离线）** | `npm pack` → `dsh plugin --profile web add ./dsh-multi-chat-*.tgz` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **Git clone** | `node bin/dsh-multi-chat.mjs install` | `dsh plugin --profile web remove dsh-multi-chat` |
+
+> 上表每一行都可以换成 `--profile desktop`；详见[用哪个 profile？](#用哪个-profileweb-还是-desktop)。
 
 > `dsh plugin --profile web remove dsh-multi-chat` 是**所有渠道统一的卸载命令**：
 > 它从 profile 移除依赖，DSH 会自动把它从 `dsh.profile.bundles` 层栈里剔除

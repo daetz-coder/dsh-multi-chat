@@ -49,7 +49,8 @@ Install a **multi-window wall** into the official [DeepSeek Harness (DSH)](https
 
 ```bash
 # 1. Install — ONE command straight from the npm registry (no CLI to download):
-dsh plugin --profile web add dsh-multi-chat
+dsh plugin --profile web add dsh-multi-chat       # for `dsh web`
+dsh plugin --profile desktop add dsh-multi-chat   # for the Desktop app
 
 #    …or via the plugin's own npx CLI (packs a tarball and installs it):
 npx dsh-multi-chat install
@@ -134,7 +135,19 @@ Open that URL on your phone and enter the token to reach the full DSH UI. The ga
 
 ## Distribution & install
 
-`dsh-multi-chat` is published to npm (unscoped public package) and released on GitHub (source zip/tarball per tag). Every channel below ends in the same three things: the package lands as a dependency of the web profile, DSH reconciles it into the bundle layer stack (the package declares `dsh.bundle.patch`, so its own `cordis.patch.yml` is mounted automatically — no manual patch edits), and a `dsh web` restart loads the wall.
+`dsh-multi-chat` is published to npm (unscoped public package) and released on GitHub (source zip/tarball per tag). Every channel below ends in the same three things: the package lands as a dependency of the target profile, DSH reconciles it into the bundle layer stack (the package declares `dsh.bundle.patch`, so its own `cordis.patch.yml` is mounted automatically — no manual patch edits), and a restart of that profile loads the wall.
+
+### Which profile? (`web` or `desktop`)
+
+Both work, and they run the **same** browser surface with the **same** platform module table:
+
+| | `web` (`dsh web`) | `desktop` (the Desktop app) |
+|---|---|---|
+| Host half — `/multi/api/*` routes | ✅ needs the `webServer` service | ✅ `dsh-web-app` provides it |
+| Browser half — slot registrations | ✅ | ✅ identical seed table |
+| Marketplace listing | ✅ | ✅ |
+
+Swap `--profile web` for `--profile desktop` in any command below. `dshmarket` is the precedent: it ships the same `dsh.client.platform: "web"` manifest and runs in both.
 
 ### Install / uninstall cheat-sheet
 
@@ -145,6 +158,8 @@ Open that URL on your phone and enter the token to reach the full DSH UI. The ga
 | **Global CLI (npm)** | `npm i -g dsh-multi-chat` then `dsh-multi-chat install` | `dsh plugin --profile web remove dsh-multi-chat` then `npm rm -g dsh-multi-chat` |
 | **Tarball (offline)** | `npm pack` → `dsh plugin --profile web add ./dsh-multi-chat-*.tgz` | `dsh plugin --profile web remove dsh-multi-chat` |
 | **Git clone** | `node bin/dsh-multi-chat.mjs install` | `dsh plugin --profile web remove dsh-multi-chat` |
+
+> Every row takes `--profile desktop` as well; see [Which profile?](#which-profile-web-or-desktop).
 
 > `dsh plugin --profile web remove dsh-multi-chat` is the **single uninstall
 > command for every channel**: it removes the dependency from the profile, and
